@@ -4,7 +4,7 @@ import http from '@/api/http';
 import { useSchoolYearStore } from '@/stores/schoolYear';
 const sy = useSchoolYearStore();
 
-const apps = ref([]); const loading = ref(false); const error = ref(''); const creds = ref(null); const busyId = ref('');
+const apps = ref([]); const loading = ref(false); const error = ref(''); const msg = ref(''); const busyId = ref('');
 const fileBase = (import.meta.env.VITE_API_BASE || '').replace(/\/api\/?$/, '');
 const GRADE_LABEL = { NURSERY: 'Nursery', KINDER_1: 'Kinder 1', KINDER_2: 'Kinder 2', GRADE_1: 'Grade 1', GRADE_2: 'Grade 2', GRADE_3: 'Grade 3', GRADE_4: 'Grade 4', GRADE_5: 'Grade 5', GRADE_6: 'Grade 6' };
 const gLabel = (g) => GRADE_LABEL[g] || g;
@@ -21,11 +21,13 @@ watch(() => sy.selected, load);
 
 async function approve(a) {
   if (a.status !== 'PENDING_APPROVAL') { error.value = 'Waiting for the application fee first.'; return; }
-  busyId.value = a._id; creds.value = null; error.value = '';
+  busyId.value = a._id; msg.value = ''; error.value = '';
   try {
     const { data } = await http.post(`/applications/${a._id}/approve`);
-    if (data.credentials) creds.value = { name: a.guardian.name, ...data.credentials };
     apps.value = apps.value.filter((x) => x._id !== a._id);
+    msg.value = data.alreadyHadAccount
+      ? `Approved. ${a.student.givenName} is now linked to the parent's existing account.`
+      : `Approved. The parent can now log in with the username they chose.`;
   } catch (e) { error.value = e?.response?.data?.message || 'Could not approve.'; }
   finally { busyId.value = ''; }
 }
@@ -43,12 +45,7 @@ async function reject(a) {
       <router-link to="/admin/enroll" class="shrink-0 rounded-lg border-2 border-[#4c1d95] px-3 py-2 text-sm font-semibold text-[#4c1d95] hover:bg-[#f5f3ff]">Enroll manually</router-link>
     </div>
 
-    <div v-if="creds" class="mb-4 rounded-xl border-2 border-[#4c1d95] bg-white px-5 py-4">
-      <p class="font-bold text-[#4c1d95]">Parent login for {{ creds.name }} (shown only once):</p>
-      <p class="mt-2 text-xl tabular-nums">Username: <b>{{ creds.username }}</b></p>
-      <p class="text-xl tabular-nums">Password: <b>{{ creds.password }}</b></p>
-      <button class="mt-2 text-base text-slate-500 underline" @click="creds = null">Close</button>
-    </div>
+    <p v-if="msg" class="mb-4 rounded-xl bg-[#dcfce7] px-5 py-3 font-semibold text-[#15803d]">{{ msg }}</p>
     <p v-if="error" class="mb-4 rounded-xl bg-[#fee2e2] px-5 py-3 font-semibold text-[#b91c1c]">{{ error }}</p>
     <p v-if="loading" class="py-10 text-center text-xl text-slate-600">Loading…</p>
 

@@ -9,7 +9,8 @@ const peso = (n) => `\u20B1${Number(n || 0).toLocaleString('en-PH')}`;
 const step = ref(1);
 const info = ref({ schoolName: '', grades: [], applicationFeeByGrade: {}, payoutAccounts: [] });
 const student = ref({ surname: '', givenName: '', middleName: '', lrn: '', birthdate: '', gender: '', gradeLevel: '' });
-const guardian = ref({ name: '', mobile: '', email: '' });
+const guardian = ref({ name: '', mobile: '', email: '', username: '', password: '' });
+const confirmPw = ref('');
 const appId = ref(''); const appFee = ref(0);
 const feeForm = ref({ method: 'GCASH', referenceNo: '' });
 const proofFile = ref(null);
@@ -27,6 +28,9 @@ async function submitApplication() {
   if (!student.value.surname || !student.value.givenName || !student.value.gradeLevel || !guardian.value.name) {
     error.value = 'Fill in the student surname, first name, grade, and parent name.'; return;
   }
+  if (!guardian.value.username || guardian.value.username.length < 3) { error.value = 'Choose a username (at least 3 characters).'; return; }
+  if (!guardian.value.password || guardian.value.password.length < 4) { error.value = 'Choose a password (at least 4 characters).'; return; }
+  if (guardian.value.password !== confirmPw.value) { error.value = 'The passwords do not match.'; return; }
   busy.value = true;
   try {
     const { data } = await http.post('/apply', { student: student.value, guardian: guardian.value });
@@ -83,6 +87,14 @@ async function submitFee() {
         <input v-model="guardian.name" placeholder="Parent/guardian name" class="rounded-lg border border-slate-300 p-3 sm:col-span-2" />
         <input v-model="guardian.mobile" placeholder="Mobile number" class="rounded-lg border border-slate-300 p-3 tabular-nums" />
         <input v-model="guardian.email" placeholder="Email (optional)" class="rounded-lg border border-slate-300 p-3" />
+      </div>
+
+      <h2 class="pt-2 text-xl font-bold text-[#5b21b6]">Create Your Login</h2>
+      <p class="text-slate-600">Choose a username and password. You will use these to log in once the school approves your application.</p>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <input v-model="guardian.username" placeholder="Username" class="rounded-lg border border-slate-300 p-3 lowercase" />
+        <input v-model="guardian.password" type="password" placeholder="Password" class="rounded-lg border border-slate-300 p-3" />
+        <input v-model="confirmPw" type="password" placeholder="Confirm password" class="rounded-lg border border-slate-300 p-3 sm:col-span-2" />
       </div>
       <button class="inline-flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#6d28d9] text-lg font-bold text-white hover:bg-[#5b21b6] disabled:opacity-60" :disabled="busy" @click="submitApplication">{{ busy ? 'Submitting…' : 'Continue to payment' }}</button>
       <p class="text-center"><router-link to="/login" class="text-[#4c1d95] underline">Already have an account? Log in</router-link></p>

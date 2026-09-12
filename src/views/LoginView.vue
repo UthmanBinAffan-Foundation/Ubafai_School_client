@@ -89,6 +89,10 @@ const terms = [
               Log in
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
             </button>
+            <div class="mt-5 rounded-xl border border-white/25 bg-white/10 p-3 text-center">
+              <p class="text-white/90">No account yet?</p>
+              <router-link to="/apply" class="mt-1 inline-block font-bold text-white underline">Submit an enrollment application →</router-link>
+            </div>
           </div>
         </div>
       </div>
