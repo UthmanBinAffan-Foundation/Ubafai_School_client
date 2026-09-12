@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 import { isInstalled, promptInstall } from '@/pwa';
 
 const username = ref(''); const password = ref(''); const error = ref('');
+const showPassword = ref(false);
 const auth = useAuthStore(); const router = useRouter();
 const logoOk = ref(true);
 const showTerms = ref(false);
@@ -75,9 +76,9 @@ const terms = [
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-white/70"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" /></svg>
             </div>
             <div class="relative">
-              <input v-model="password" type="password" placeholder="Password" @keyup.enter="submit"
+              <input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="Password" @keyup.enter="submit"
                 class="w-full rounded-xl border border-white/25 bg-white/15 px-4 py-3 pr-11 text-lg text-white placeholder-white/60 backdrop-blur" />
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-white/70"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+              <button type="button" class="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-white/70" :aria-label="showPassword ? 'Hide password' : 'Show password'" @click="showPassword = !showPassword"><svg v-if="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg><svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5"><path d="M3 3l18 18" /><path d="M10.6 10.6a3 3 0 0 0 4.2 4.2" /><path d="M9.9 5.1A9.8 9.8 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.7" /><path d="M6.1 6.1A17 17 0 0 0 2 12s3.5 7 10 7a9.8 9.8 0 0 0 3-.5" /></svg></button>
             </div>
 
             <p class="text-right text-sm text-white/70">Forgot your password? Contact the school admin.</p>
