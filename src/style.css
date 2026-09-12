@@ -32,3 +32,12 @@ select:focus, input:focus, textarea:focus {
 
 /* Legacy helper (iniiwan para hindi masira) */
 .btn { @apply px-4 py-3 rounded-lg font-semibold text-white; }
+
+/* Print: ipakita lang ang receipt (.printable), A4 */
+@page { size: A4; margin: 14mm; }
+@media print {
+  body * { visibility: hidden; }
+  .printable, .printable * { visibility: visible; }
+  .printable { position: absolute; left: 0; top: 0; width: 100%; border: none !important; }
+  .no-print { display: none !important; }
+}

@@ -5,6 +5,7 @@ import http from '@/api/http';
 
 const students = ref([]);
 const items = ref([]);
+const payments = ref([]);
 const selected = ref({});          // key -> bool
 const amount = ref(null);
 const form = ref({ student: '', referenceNo: '', paymentDate: new Date().toISOString().slice(0, 10) });
@@ -25,12 +26,27 @@ onMounted(async () => {
 });
 
 async function loadLedger(id) {
-  items.value = []; selected.value = {}; amount.value = null;
+  items.value = []; payments.value = []; selected.value = {}; amount.value = null;
   if (!id) return;
   loadingLedger.value = true;
-  try { items.value = (await http.get(`/students/${id}/ledger-items`)).data.items; }
-  catch { /* ignore */ }
+  try {
+    const [it, led] = await Promise.all([
+      http.get(`/students/${id}/ledger-items`),
+      http.get(`/students/${id}/ledger`),
+    ]);
+    items.value = it.data.items;
+    payments.value = led.data.payments || [];
+  } catch { /* ignore */ }
   finally { loadingLedger.value = false; }
+}
+
+const badge = (s) => (s === 'VERIFIED' ? 'bg-[#dcfce7] text-[#15803d]' : s === 'REJECTED' ? 'bg-[#fee2e2] text-[#b91c1c]' : s === 'REVERSED' ? 'bg-slate-200 text-slate-600' : 'bg-[#fef3c7] text-[#b45309]');
+async function reversePayment(p) {
+  if (p.status !== 'VERIFIED') return;
+  const reason = prompt('Reason for reversing this payment? (optional)');
+  if (reason === null) return;
+  try { await http.post(`/payments/${p._id}/reverse`, { reason }); done.value = 'Payment reversed. Balance restored.'; await loadLedger(form.value.student); }
+  catch { error.value = 'Could not reverse.'; }
 }
 watch(() => form.value.student, (id) => loadLedger(id));
 
@@ -115,6 +131,27 @@ async function submit() {
         <button class="inline-flex min-h-[56px] w-full items-center justify-center rounded-xl bg-[#6d28d9] px-6 text-xl font-bold text-white hover:bg-[#5b21b6] disabled:opacity-60"
           :disabled="saving" @click="submit">{{ saving ? 'Recording…' : 'Record cash payment' }}</button>
         <p class="text-sm text-slate-500">Check the fee(s) to pay. The amount is distributed across your selection in order — a shortfall makes the last one partially paid.</p>
+
+        <!-- Payment History (Print / Reverse) -->
+        <section v-if="payments.length" class="rounded-2xl border border-[#e5e0f7] bg-white p-4">
+          <h2 class="mb-2 text-lg font-bold text-[#5b21b6]">Payment History</h2>
+          <ul class="space-y-2">
+            <li v-for="p in payments" :key="p._id" class="flex flex-wrap items-center justify-between gap-2 border-b border-[#f1eefb] pb-2">
+              <div>
+                <span class="font-semibold tabular-nums">{{ peso(p.amount) }}</span>
+                <span class="ml-2 text-slate-500">{{ p.method }}</span>
+                <span v-if="p.referenceNo" class="ml-2 text-slate-500 tabular-nums">#{{ p.referenceNo }}</span>
+                <span class="ml-2 text-slate-400">{{ fmtDate(p.paymentDate) }}</span>
+                <span v-if="p.receiptNo" class="ml-2 text-slate-400 tabular-nums">{{ p.receiptNo }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="rounded px-2 py-0.5 text-sm font-semibold" :class="badge(p.status)">{{ p.status }}</span>
+                <router-link v-if="p.status === 'VERIFIED'" :to="'/admin/receipt/' + p._id" class="rounded border border-[#4c1d95] px-2 py-1 text-xs font-semibold text-[#4c1d95]">Print</router-link>
+                <button v-if="p.status === 'VERIFIED'" class="rounded border border-[#b91c1c] px-2 py-1 text-xs font-semibold text-[#b91c1c]" @click="reversePayment(p)">Reverse</button>
+              </div>
+            </li>
+          </ul>
+        </section>
       </template>
     </div>
   </div>

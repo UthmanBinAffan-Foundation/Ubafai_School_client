@@ -6,6 +6,15 @@ import { enablePush } from '@/push';
 const children = ref([]);
 const loading = ref(false);
 const error = ref('');
+const lrnMsg = ref('');
+const lrnInputs = ref({});
+async function saveLrn(c) {
+  const val = (lrnInputs.value[c.student._id] || '').trim();
+  if (!val) return;
+  lrnMsg.value = ''; error.value = '';
+  try { await http.patch(`/students/${c.student._id}/lrn`, { lrn: val }); lrnMsg.value = 'LRN saved.'; await load(); }
+  catch (e) { error.value = e?.response?.data?.message || 'Could not save LRN.'; }
+}
 
 const pushState = ref('idle'); // idle | on | error
 const pushMsg = ref('');
@@ -37,6 +46,7 @@ onMounted(load);
 <template>
   <div class="text-[#241b33]">
     <p class="mb-4 text-lg text-slate-600">View each child's fees and grades.</p>
+    <p v-if="lrnMsg" class="mb-3 rounded-xl bg-[#dcfce7] px-5 py-3 font-semibold text-[#15803d]">{{ lrnMsg }}</p>
 
     <!-- Paalala / notifications -->
     <div class="mb-6 rounded-xl bg-[#f5f3ff] p-4">
@@ -61,6 +71,12 @@ onMounted(load);
             <h2 class="text-2xl font-bold">{{ c.student.surname }}, {{ c.student.givenName }}</h2>
             <span class="text-lg text-slate-500">{{ prettyLevel(c.student.gradeLevel) }}</span>
           </div>
+          <div v-if="!c.student.lrn" class="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-[#fef9e7] p-2">
+            <span class="text-sm font-semibold text-[#7c5b0a]">Add LRN (if known):</span>
+            <input v-model="lrnInputs[c.student._id]" placeholder="LRN" class="rounded border border-slate-300 p-1 text-sm tabular-nums" />
+            <button class="rounded bg-[#6d28d9] px-3 py-1 text-sm font-bold text-white" @click="saveLrn(c)">Save</button>
+          </div>
+          <p v-else class="mt-1 text-sm text-slate-400">LRN: {{ c.student.lrn }}</p>
 
           <div class="mt-3 rounded-xl bg-[#f5f3ff] p-5">
             <p class="text-base font-semibold text-[#5b21b6]">Remaining balance</p>

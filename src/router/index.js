@@ -18,6 +18,7 @@ const routes = [
   { path: '/admin/settings', component: () => import('@/views/admin/SettingsView.vue'), meta: admin },
   { path: '/fees', component: () => import('@/views/FeesView.vue'), meta: { roles: ['ADMIN', 'SUPERADMIN', 'GUARDIAN', 'TEACHER'] } },
   { path: '/admin/student/:id', component: () => import('@/views/admin/StudentLedgerView.vue'), meta: admin },
+  { path: '/admin/receipt/:id', component: () => import('@/views/admin/ReceiptView.vue'), meta: admin },
 
   { path: '/portal', component: () => import('@/views/parent/ParentDashboard.vue'), meta: { roles: ['GUARDIAN'] } },
   { path: '/portal/pay', component: () => import('@/views/parent/SubmitPaymentView.vue'), meta: { roles: ['GUARDIAN'] } },
