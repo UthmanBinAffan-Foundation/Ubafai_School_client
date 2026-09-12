@@ -1,0 +1,39 @@
+import { createRouter, createWebHistory } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+
+const admin = { roles: ['ADMIN', 'SUPERADMIN'] };
+const routes = [
+  { path: '/login', component: () => import('@/views/LoginView.vue'), meta: { public: true } },
+  { path: '/apply', component: () => import('@/views/ApplyView.vue'), meta: { public: true } },
+
+  { path: '/', redirect: '/admin' },
+  { path: '/admin', component: () => import('@/views/admin/AdminDashboard.vue'), meta: admin },
+  { path: '/admin/verify', component: () => import('@/views/admin/VerificationHub.vue'), meta: admin },
+  { path: '/admin/cash', component: () => import('@/views/admin/CashPaymentView.vue'), meta: admin },
+  { path: '/admin/applications', component: () => import('@/views/admin/ApplicationsView.vue'), meta: admin },
+  { path: '/admin/enroll', component: () => import('@/views/admin/EnrollStudentView.vue'), meta: admin },
+  { path: '/admin/teachers', component: () => import('@/views/admin/TeachersView.vue'), meta: admin },
+  { path: '/admin/parents', component: () => import('@/views/admin/GuardiansView.vue'), meta: admin },
+  { path: '/admin/masterlist', component: () => import('@/views/admin/MasterlistView.vue'), meta: admin },
+  { path: '/admin/settings', component: () => import('@/views/admin/SettingsView.vue'), meta: admin },
+  { path: '/fees', component: () => import('@/views/FeesView.vue'), meta: { roles: ['ADMIN', 'SUPERADMIN', 'GUARDIAN', 'TEACHER'] } },
+  { path: '/admin/student/:id', component: () => import('@/views/admin/StudentLedgerView.vue'), meta: admin },
+
+  { path: '/portal', component: () => import('@/views/parent/ParentDashboard.vue'), meta: { roles: ['GUARDIAN'] } },
+  { path: '/portal/pay', component: () => import('@/views/parent/SubmitPaymentView.vue'), meta: { roles: ['GUARDIAN'] } },
+  { path: '/portal/grades/:id', component: () => import('@/views/parent/GradesView.vue'), meta: { roles: ['GUARDIAN'] } },
+
+  { path: '/teacher', component: () => import('@/views/teacher/GradeEncodeView.vue'), meta: { roles: ['TEACHER', 'ADMIN', 'SUPERADMIN'] } },
+];
+
+const router = createRouter({ history: createWebHistory(), routes });
+router.beforeEach((to) => {
+  const auth = useAuthStore();
+  if (to.meta.public) return true;
+  if (!auth.isAuthed) return '/login';
+  if (to.meta.roles && !to.meta.roles.includes(auth.role)) {
+    return auth.role === 'GUARDIAN' ? '/portal' : auth.role === 'TEACHER' ? '/teacher' : '/admin';
+  }
+  return true;
+});
+export default router;
