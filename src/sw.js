@@ -1,29 +1,10 @@
-/* Custom service worker para sa Web Push at PWA install.
-   Binabanggit ang __WB_MANIFEST para masiyahan ang vite-plugin-pwa injectManifest. */
-const _precache = self.__WB_MANIFEST || [];
-const CACHE = 'ubafai-rt-v1';
+import { precacheAndRoute } from 'workbox-precaching';
+
+// Precache built assets. Ito rin ang injection point para sa vite-plugin-pwa (huwag alisin).
+precacheAndRoute(self.__WB_MANIFEST || []);
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
-
-/* FETCH handler — kailangan ito para ituring ng browser na "installable" ang app.
-   Network-first na may runtime cache fallback (basic offline). */
-self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  if (req.method !== 'GET') return;
-  if (new URL(req.url).origin !== self.location.origin) return;
-  event.respondWith((async () => {
-    try {
-      const res = await fetch(req);
-      const cache = await caches.open(CACHE);
-      cache.put(req, res.clone());
-      return res;
-    } catch {
-      const cached = await caches.match(req);
-      return cached || Response.error();
-    }
-  })());
-});
 
 self.addEventListener('push', (event) => {
   let data = {};

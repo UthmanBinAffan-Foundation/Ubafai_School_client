@@ -62,7 +62,7 @@ const terms = [
       <div class="flex flex-1 items-center justify-center p-4">
         <div class="w-full max-w-md rounded-3xl border border-white/25 bg-white/10 p-8 shadow-2xl backdrop-blur-xl">
           <div class="mb-6 flex flex-col items-center">
-            <img v-if="logoOk" src="/logo.png" alt="Logo" class="mb-3 h-20 w-20 rounded-2xl object-contain" @error="logoOk = false" />
+            <img v-if="logoOk" :src="'/logo.png'" alt="Logo" class="mb-3 h-20 w-20 rounded-2xl object-contain" @error="logoOk = false" />
             <div v-else class="mb-3 flex h-20 w-20 items-center justify-center rounded-2xl bg-white/20 text-3xl font-bold text-white">U</div>
             <h1 class="text-3xl font-bold text-white">Log in</h1>
             <p class="text-white/70">UBAFAI Portal</p>

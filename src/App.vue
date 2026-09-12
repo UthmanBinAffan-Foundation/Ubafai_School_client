@@ -8,6 +8,7 @@ const auth = useAuthStore();
 const syStore = useSchoolYearStore();
 const router = useRouter();
 const isAdmin = () => ['ADMIN', 'SUPERADMIN'].includes(auth.role);
+const activeYearLabel = computed(() => syStore.years.find((y) => y.isActive)?.label || '');
 watch(() => auth.isAuthed, (v) => { if (v && isAdmin()) syStore.load(); }, { immediate: true });
 const route = useRoute();
 
@@ -100,7 +101,7 @@ const currentPage = computed(() => {
       class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-gradient-to-b from-[#4c1d95] to-[#5b21b6] text-violet-100 shadow-xl transition-transform duration-200 lg:translate-x-0"
       :class="isOpen ? 'translate-x-0' : '-translate-x-full'">
       <div class="flex items-center gap-3 px-5 py-5">
-        <img v-if="logoOk" src="/logo192.png" alt="Logo" class="h-11 w-11 rounded-xl bg-white/15 object-contain p-1" @error="logoOk = false" />
+        <img v-if="logoOk" :src="'/logo192.png'" alt="Logo" class="h-11 w-11 rounded-xl bg-white/15 object-contain p-1" @error="logoOk = false" />
         <div v-else class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-xl font-bold text-white">U</div>
         <div>
           <p class="text-lg font-bold leading-tight text-white">UBAFAI</p>
@@ -129,16 +130,14 @@ const currentPage = computed(() => {
           <button @click="open" aria-label="Open menu" class="rounded-lg p-1 text-[#4c1d95] lg:hidden">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="h-7 w-7"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
           </button>
-          <img v-if="logoOk" src="/logo192.png" alt="Logo" class="h-9 w-9 rounded-lg object-contain" @error="logoOk = false" />
+          <img v-if="logoOk" :src="'/logo192.png'" alt="Logo" class="h-9 w-9 rounded-lg object-contain" @error="logoOk = false" />
           <div v-else class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#4c1d95] text-base font-bold text-white">U</div>
           <div class="leading-tight">
             <p class="font-bold text-[#4c1d95]">UBAFAI</p>
             <p class="hidden text-xs text-slate-500 sm:block">Management System</p>
           </div>
           <div class="ml-auto flex items-center gap-3 text-right">
-            <select v-if="isAdmin() && syStore.years.length" v-model="syStore.selected" class="rounded-lg border border-[#e5e0f7] bg-white px-2 py-1 text-sm text-[#4c1d95]" title="School Year">
-              <option v-for="y in syStore.years" :key="y._id" :value="y._id">{{ y.label }}{{ y.isActive ? ' (current)' : '' }}</option>
-            </select>
+            <span v-if="isAdmin() && activeYearLabel" class="hidden text-sm font-medium text-[#4c1d95] sm:block">Data for School Year: {{ activeYearLabel }}</span>
             <div class="hidden sm:block leading-tight">
               <p class="text-xs text-slate-500">Logged in as</p>
               <p class="font-semibold text-[#241b33]">{{ auth.user?.username }}
