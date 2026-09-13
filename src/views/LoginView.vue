@@ -6,16 +6,18 @@ import { isInstalled, promptInstall } from '@/pwa';
 
 const username = ref(''); const password = ref(''); const error = ref('');
 const showPassword = ref(false);
+const loading = ref(false);
 const auth = useAuthStore(); const router = useRouter();
 const logoOk = ref(true);
 const showTerms = ref(false);
 
 async function submit() {
-  error.value = '';
+  error.value = ''; loading.value = true;
   try {
     const user = await auth.login(username.value, password.value);
     router.push(user.role === 'GUARDIAN' ? '/portal' : user.role === 'TEACHER' ? '/teacher' : '/admin');
   } catch (e) { error.value = e?.response?.data?.message || 'Incorrect username or password'; }
+  finally { loading.value = false; }
 }
 
 // PWA install (nahuli na sa main.js ang beforeinstallprompt)
@@ -84,10 +86,11 @@ const terms = [
             <p class="text-right text-sm text-white/70">Forgot your password? Contact the school admin.</p>
             <p v-if="error" class="rounded-lg bg-red-500/25 px-4 py-2 text-white">{{ error }}</p>
 
-            <button @click="submit"
-              class="inline-flex min-h-[54px] w-full items-center justify-center gap-2 rounded-xl bg-[#1e1b2e] text-lg font-bold text-white transition-colors hover:bg-[#2a2540]">
-              Log in
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            <button @click="submit" :disabled="loading"
+              class="inline-flex min-h-[54px] w-full items-center justify-center gap-2 rounded-xl bg-[#1e1b2e] text-lg font-bold text-white transition-colors hover:bg-[#2a2540] disabled:opacity-70">
+              <svg v-if="loading" class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" class="opacity-25" /><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round" /></svg>
+              <span>{{ loading ? 'Logging in…' : 'Log in' }}</span>
+              <svg v-if="!loading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
             </button>
             <div class="mt-5 rounded-xl border border-white/25 bg-white/10 p-3 text-center">
               <p class="text-white/90">No account yet?</p>

@@ -12,8 +12,8 @@ self.addEventListener('push', (event) => {
   catch { data = { body: event.data && event.data.text() }; }
   const options = {
     body: data.body || '',
-    icon: '/pwa-192.png',
-    badge: '/pwa-192.png',
+    icon: '/logo192.png',
+    badge: '/logo192.png',
     data: { url: data.url || '/portal' },
   };
   event.waitUntil(self.registration.showNotification(data.title || 'UBAFAI', options));
