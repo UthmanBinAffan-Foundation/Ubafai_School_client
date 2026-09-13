@@ -54,8 +54,11 @@ async function reject(a) {
       <li v-for="a in apps" :key="a._id" class="rounded-2xl border border-[#e5e0f7] bg-white p-5">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p class="text-xl font-bold">{{ a.student.surname }}, {{ a.student.givenName }} {{ a.student.middleName }}</p>
-            <p class="text-slate-600">{{ gLabel(a.student.gradeLevel) }} · LRN: {{ a.student.lrn || '—' }}</p>
+            <p class="text-xl font-bold">{{ a.student.surname }}, {{ a.student.givenName }} {{ a.student.middleName }}
+              <span class="ml-2 rounded px-2 py-0.5 text-sm font-semibold" :class="a.returning ? 'bg-[#dbeafe] text-[#1e40af]' : 'bg-[#dcfce7] text-[#15803d]'">{{ a.returning ? 'Returning student' : 'New student' }}</span>
+            </p>
+            <p class="text-slate-600">Applying for: {{ gLabel(a.student.gradeLevel) }} · LRN: {{ a.student.lrn || '—' }}</p>
+            <p v-if="a.returning && a.previous" class="text-sm text-slate-500">Previous record: {{ gLabel(a.previous.gradeLevel) }}<span v-if="a.previous.schoolYear"> ({{ a.previous.schoolYear }})</span></p>
             <p class="mt-1 text-slate-600">Parent: {{ a.guardian.name }} · {{ a.guardian.mobile || '—' }}</p>
           </div>
           <span class="rounded px-2 py-1 text-sm font-semibold" :class="a.status === 'PENDING_APPROVAL' ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#fef3c7] text-[#b45309]'">{{ a.status === 'PENDING_APPROVAL' ? 'Fee paid — ready' : 'Waiting for fee' }}</span>

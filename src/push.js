@@ -27,3 +27,14 @@ export async function enablePush() {
   });
   await http.post('/push/subscribe', sub.toJSON());
 }
+
+// Naka-on na ba ang notifications sa device na ito? (para one-time setup)
+export async function isPushSubscribed() {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+    if (Notification.permission !== 'granted') return false;
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    return !!sub;
+  } catch { return false; }
+}

@@ -1,20 +1,21 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import http from '@/api/http';
-import { enablePush } from '@/push';
+import { enablePush, isPushSubscribed } from '@/push';
 
 const pendingPayments = ref(0);
 const pendingApps = ref(0);
-const pushMsg = ref(''); const pushErr = ref('');
+const pushMsg = ref(''); const pushErr = ref(''); const notifOn = ref(false);
 
 onMounted(async () => {
   try { pendingPayments.value = (await http.get('/payments/pending')).data.length; } catch { /* ok */ }
   try { pendingApps.value = (await http.get('/applications')).data.length; } catch { /* ok */ }
+  notifOn.value = await isPushSubscribed();
 });
 
 async function turnOnNotifs() {
   pushMsg.value = ''; pushErr.value = '';
-  try { await enablePush(); pushMsg.value = 'Notifications are on. You will be alerted for new payments and enrollment applications.'; }
+  try { await enablePush(); notifOn.value = true; }
   catch (e) { pushErr.value = e?.message || 'Could not turn on notifications.'; }
 }
 </script>
@@ -25,11 +26,15 @@ async function turnOnNotifs() {
 
     <!-- Notifications -->
     <div class="mb-5 rounded-2xl border border-[#e5e0f7] bg-white p-4">
-      <button class="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-[#0f5132] px-5 text-lg font-semibold text-white hover:bg-[#0a3d25]"
-        style="background:#4c1d95" @click="turnOnNotifs">Turn on notifications</button>
-      <p class="mt-2 text-sm text-slate-500">Get alerts for new online payments and enrollment applications.</p>
-      <p v-if="pushMsg" class="mt-1 text-sm font-semibold text-[#15803d]">{{ pushMsg }}</p>
-      <p v-if="pushErr" class="mt-1 text-sm font-semibold text-[#b91c1c]">{{ pushErr }}</p>
+      <div v-if="notifOn" class="flex items-center gap-2 font-semibold text-[#15803d]">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><path d="M20 6 9 17l-5-5" /></svg>
+        Notifications are on for this device.
+      </div>
+      <template v-else>
+        <button class="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-[#4c1d95] px-5 text-lg font-semibold text-white hover:bg-[#3b1580]" @click="turnOnNotifs">Turn on notifications</button>
+        <p class="mt-2 text-sm text-slate-500">Get alerts for new online payments and enrollment applications.</p>
+        <p v-if="pushErr" class="mt-1 text-sm font-semibold text-[#b91c1c]">{{ pushErr }}</p>
+      </template>
     </div>
 
     <!-- To-do -->

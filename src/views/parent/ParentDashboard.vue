@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import http from '@/api/http';
-import { enablePush } from '@/push';
+import { enablePush, isPushSubscribed } from '@/push';
 
 const children = ref([]);
 const loading = ref(false);
@@ -40,7 +40,7 @@ async function turnOnPush() {
     pushMsg.value = e?.message || 'Could not turn on reminders.';
   }
 }
-onMounted(load);
+onMounted(async () => { await load(); if (await isPushSubscribed()) pushState.value = 'on'; });
 </script>
 
 <template>
@@ -50,10 +50,14 @@ onMounted(load);
 
     <!-- Paalala / notifications -->
     <div class="mb-6 rounded-xl bg-[#f5f3ff] p-4">
-      <button v-if="pushState !== 'on'"
-        class="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-[#5b21b6] px-5 text-lg font-semibold text-white hover:bg-[#4c1d95]"
-        @click="turnOnPush">Turn on phone reminders</button>
-      <p v-if="pushMsg" class="mt-2 text-base" :class="pushState === 'error' ? 'text-[#b91c1c]' : 'text-[#15803d]'">{{ pushMsg }}</p>
+      <div v-if="pushState === 'on'" class="flex items-center gap-2 font-semibold text-[#15803d]">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><path d="M20 6 9 17l-5-5" /></svg>
+        Reminders are on for this device.
+      </div>
+      <template v-else>
+        <button class="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-[#4c1d95] px-5 text-lg font-semibold text-white hover:bg-[#3b1580]" @click="turnOnPush">Turn on phone reminders</button>
+        <p v-if="pushMsg" class="mt-2 text-base" :class="pushState === 'error' ? 'text-[#b91c1c]' : 'text-[#15803d]'">{{ pushMsg }}</p>
+      </template>
     </div>
 
     <p v-if="error" class="mb-4 rounded-xl bg-[#fee2e2] px-5 py-4 text-lg font-semibold text-[#b91c1c]">{{ error }}</p>
