@@ -58,6 +58,7 @@ const NAV = {
   guardian: [
     { to: '/portal', label: 'Balance', icon: 'wallet' },
     { to: '/portal/pay', label: 'Pay', icon: 'card' },
+    { to: '/portal/enroll', label: 'Enroll', icon: 'enroll' },
     { to: '/fees', label: 'Fees', icon: 'fees' },
   ],
   teacher: [
@@ -83,7 +84,8 @@ const PAGES = {
   '/admin/masterlist': { title: 'Student List', icon: 'list' },
   '/admin/settings':   { title: 'Settings',                icon: 'settings' },
   '/portal':           { title: "Children's Balances",        icon: 'wallet' },
-  '/portal/pay':       { title: 'Submit Payment',         icon: 'card' },
+  '/portal/pay':       { title: 'Submit Payment',            icon: 'card' },
+  '/portal/enroll':    { title: 'Enroll a Child',             icon: 'enroll' },
   '/teacher':          { title: 'Encode Grades',       icon: 'grades' },
 };
 const currentPage = computed(() => {
