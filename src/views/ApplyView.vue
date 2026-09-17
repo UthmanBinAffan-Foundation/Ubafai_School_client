@@ -44,11 +44,7 @@ async function submitFee() {
   if (!feeForm.value.referenceNo) { error.value = 'Enter the payment reference number.'; return; }
   busy.value = true;
   try {
-    const fd = new FormData();
-    fd.append('method', feeForm.value.method);
-    fd.append('referenceNo', feeForm.value.referenceNo);
-    if (proofFile.value) fd.append('proof', proofFile.value);
-    await http.post(`/apply/${appId.value}/fee`, fd);
+    await http.post(`/apply/${appId.value}/fee`, { method: feeForm.value.method, referenceNo: feeForm.value.referenceNo });
     step.value = 3;
   } catch (e) { error.value = e?.response?.data?.message || 'Could not submit payment. Please try again.'; }
   finally { busy.value = false; }
@@ -115,7 +111,6 @@ async function submitFee() {
         </select>
         <input v-model="feeForm.referenceNo" placeholder="Reference number" class="rounded-lg border border-slate-300 p-3 tabular-nums" />
       </div>
-      <label class="block text-sm text-slate-500">Proof of payment (optional)<input type="file" accept="image/*" class="mt-1 w-full text-base" @change="onFile" /></label>
       <button class="inline-flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#6d28d9] text-lg font-bold text-white hover:bg-[#5b21b6] disabled:opacity-60" :disabled="busy" @click="submitFee">{{ busy ? 'Submitting…' : 'Submit application' }}</button>
     </div>
 

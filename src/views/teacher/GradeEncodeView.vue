@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import http from '@/api/http';
+import { enablePush, isPushSubscribed } from '@/push';
 
 const assignments = ref([]);
 const teacherName = ref('');
@@ -8,6 +9,8 @@ const gradeLevel = ref('');
 const sheet = ref({ subjects: [], terms: [], students: [] });
 const loading = ref(false); const error = ref(''); const msg = ref('');
 const editId = ref(''); const editGrades = ref({}); const saving = ref(false);
+const notifOn = ref(false);
+async function turnOnNotifs() { try { await enablePush(); notifOn.value = true; } catch (e) { error.value = e?.message || 'Could not turn on notifications.'; } }
 
 const GRADE_LABEL = { NURSERY: 'Nursery', KINDER_1: 'Kinder 1', KINDER_2: 'Kinder 2', GRADE_1: 'Grade 1', GRADE_2: 'Grade 2', GRADE_3: 'Grade 3', GRADE_4: 'Grade 4', GRADE_5: 'Grade 5', GRADE_6: 'Grade 6' };
 const gLabel = (g) => GRADE_LABEL[g] || g;
@@ -20,7 +23,7 @@ async function loadBootstrap() {
     if (myGrades.value.length) { gradeLevel.value = myGrades.value[0]; await loadSheet(); }
   } catch (e) { error.value = e?.response?.data?.message || 'Could not load.'; }
 }
-onMounted(loadBootstrap);
+onMounted(async () => { await loadBootstrap(); notifOn.value = await isPushSubscribed(); });
 
 async function loadSheet() {
   if (!gradeLevel.value) return;
@@ -51,6 +54,16 @@ async function delRow(row) {
 <template>
   <div class="text-[#241b33]">
     <p class="mb-3 text-lg text-slate-600">{{ teacherName }} — enter grades for your students.</p>
+    <div class="mb-3 rounded-xl border border-[#e5e0f7] bg-white p-3">
+      <div v-if="notifOn" class="flex items-center gap-2 font-semibold text-[#15803d]">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-5 w-5"><path d="M20 6 9 17l-5-5" /></svg>
+        Notifications are on for this device.
+      </div>
+      <template v-else>
+        <button class="rounded-lg bg-[#4c1d95] px-4 py-2 font-semibold text-white hover:bg-[#3b1580]" @click="turnOnNotifs">Turn on notifications</button>
+        <p class="mt-1 text-sm text-slate-500">Get reminders for grade upload deadlines.</p>
+      </template>
+    </div>
     <p v-if="msg" class="mb-3 rounded-xl bg-[#dcfce7] px-5 py-3 font-semibold text-[#15803d]">{{ msg }}</p>
     <p v-if="error" class="mb-3 rounded-xl bg-[#fee2e2] px-5 py-3 font-semibold text-[#b91c1c]">{{ error }}</p>
 

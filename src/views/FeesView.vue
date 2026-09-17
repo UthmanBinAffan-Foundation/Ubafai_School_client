@@ -4,10 +4,12 @@ import http from '@/api/http';
 import { useAuthStore } from '@/stores/auth';
 
 const auth = useAuthStore();
-const canEdit = computed(() => ['ADMIN', 'SUPERADMIN'].includes(auth.role));
+const isAdmin = computed(() => ['ADMIN', 'SUPERADMIN'].includes(auth.role));
+const canEdit = computed(() => isAdmin.value || (auth.role === 'REGISTRAR' && auth.permissions.includes('fees')));
 
 const CATEGORIES = ['TUITION', 'BOOKS', 'BUS', 'PE_UNIFORM', 'SCHOOL_ID', 'GRADUATION', 'APPLICATION', 'MISC'];
-const GRADE_LABEL = { NURSERY: 'Nursery', KINDER_1: 'Kinder 1', KINDER_2: 'Kinder 2', GRADE_1: 'Grade 1', GRADE_2: 'Grade 2', GRADE_3: 'Grade 3', GRADE_4: 'Grade 4', GRADE_5: 'Grade 5', GRADE_6: 'Grade 6' };
+const GRADE_LABEL = { NURSERY: 'Nursery', KINDER_1: 'Kinder 1', KINDER_2: 'Kinder 2', GRADE_1: 'Grade 1', GRADE_2: 'Grade 2', GRADE_3: 'Grade 3', GRADE_4: 'Grade 4', GRADE_5: 'Grade 5', GRADE_6: 'Grade 6', GRADE_7: 'Grade 7', GRADE_8: 'Grade 8', GRADE_9: 'Grade 9', GRADE_10: 'Grade 10', GRADE_11: 'Grade 11', GRADE_12: 'Grade 12' };
+const ALL_GRADES = ['NURSERY', 'KINDER_1', 'KINDER_2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9', 'GRADE_10', 'GRADE_11', 'GRADE_12'];
 const gLabel = (g) => GRADE_LABEL[g] || g;
 const peso = (n) => `\u20B1${Number(n || 0).toLocaleString('en-PH')}`;
 
@@ -18,6 +20,8 @@ const gradeLevel = ref('');
 const loading = ref(false); const savingFees = ref(false); const savingDl = ref(false);
 const error = ref(''); const msg = ref('');
 const showHistory = ref(false); const historyRows = ref([]);
+const showAddGrade = ref(false); const newGrade = ref(''); const addingGrade = ref(false);
+const availableGrades = computed(() => ALL_GRADES.filter((g) => !schedules.value.some((s) => s.gradeLevel === g)));
 
 const current = computed(() => schedules.value.find((s) => s.gradeLevel === gradeLevel.value));
 const total = computed(() => (current.value?.lines || []).reduce((s, l) => s + Number(l.amount || 0), 0));
@@ -31,9 +35,9 @@ async function load() {
     schedules.value = fees.data;
     periodOpts.value = info.data.periods || [];
     if (schedules.value.length && !gradeLevel.value) gradeLevel.value = schedules.value[0].gradeLevel;
-    if (canEdit.value) {
+    if (isAdmin.value) {
       const dl = (await http.get('/school/periods')).data;
-      deadlines.value = dl.map((p) => ({ code: p.code, label: p.label, input: toInput(p.dueDate) }));
+      deadlines.value = dl.map((p) => ({ code: p.code, label: p.label, input: toInput(p.dueDate), gradeInput: toInput(p.gradeDueDate) }));
     }
   } catch { error.value = 'Could not load fees.'; }
   finally { loading.value = false; }
@@ -52,12 +56,36 @@ async function saveFees() {
   } catch { error.value = 'Could not save fees.'; }
   finally { savingFees.value = false; }
 }
+async function deleteGrade() {
+  if (!gradeLevel.value) return;
+  if (!confirm(`Delete ${gLabel(gradeLevel.value)} and its fees for the current year? This cannot be undone.`)) return;
+  error.value = ''; msg.value = '';
+  try {
+    await http.delete(`/fees/${gradeLevel.value}`);
+    schedules.value = schedules.value.filter((s) => s.gradeLevel !== gradeLevel.value);
+    gradeLevel.value = schedules.value[0]?.gradeLevel || '';
+    msg.value = 'Grade level deleted.';
+  } catch (e) { error.value = e?.response?.data?.message || 'Could not delete grade level.'; }
+}
+async function addGrade() {
+  if (!newGrade.value) return;
+  addingGrade.value = true; error.value = ''; msg.value = '';
+  try {
+    const { data } = await http.post('/fees', { gradeLevel: newGrade.value });
+    schedules.value.push(data);
+    schedules.value.sort((a, b) => ALL_GRADES.indexOf(a.gradeLevel) - ALL_GRADES.indexOf(b.gradeLevel));
+    gradeLevel.value = data.gradeLevel;
+    showAddGrade.value = false; newGrade.value = '';
+    msg.value = `${gLabel(data.gradeLevel)} added. Now add its fees below.`;
+  } catch (e) { error.value = e?.response?.data?.message || 'Could not add grade level.'; }
+  finally { addingGrade.value = false; }
+}
 async function saveDeadlines() {
   savingDl.value = true; msg.value = ''; error.value = '';
   try {
-    const dueDates = {};
-    deadlines.value.forEach((d) => { dueDates[d.code] = d.input || null; });
-    await http.put('/school/periods/duedates', { dueDates });
+    const dueDates = {}; const gradeDueDates = {};
+    deadlines.value.forEach((d) => { dueDates[d.code] = d.input || null; gradeDueDates[d.code] = d.gradeInput || null; });
+    await http.put('/school/periods/duedates', { dueDates, gradeDueDates });
     msg.value = 'Deadlines saved.';
   } catch { error.value = 'Could not save deadlines.'; }
   finally { savingDl.value = false; }
@@ -81,23 +109,35 @@ const fmtVal = (v) => (typeof v === 'boolean' ? (v ? 'yes' : 'no') : (v == null 
 
     <div v-else class="space-y-6">
       <!-- Deadlines (admin only) -->
-      <section v-if="canEdit && deadlines.length" class="rounded-2xl border border-[#e5e0f7] bg-white p-5">
-        <h2 class="mb-2 text-xl font-bold text-[#5b21b6]">Term Due Dates</h2>
-        <p class="mb-3 text-slate-600">Reminders are sent 5 days before and on the due date.</p>
+      <section v-if="isAdmin && deadlines.length" class="rounded-2xl border border-[#e5e0f7] bg-white p-5">
+        <h2 class="mb-2 text-xl font-bold text-[#5b21b6]">Term Deadlines</h2>
+        <p class="mb-3 text-slate-600">Parents are reminded 5 days before/on the payment due date. Teachers are reminded 3 days before/on the grade upload deadline.</p>
         <div class="space-y-2">
-          <label v-for="d in deadlines" :key="d.code" class="flex items-center justify-between gap-4">
-            <span class="text-lg font-semibold">{{ d.label }}</span>
-            <input v-model="d.input" type="date" class="rounded-lg border border-slate-300 p-2 text-lg" />
-          </label>
+          <div v-for="d in deadlines" :key="d.code" class="rounded-lg border border-[#eef0f6] p-3">
+            <p class="mb-1 text-lg font-semibold">{{ d.label }}</p>
+            <div class="grid gap-2 sm:grid-cols-2">
+              <label class="text-sm text-slate-500">Payment due<input v-model="d.input" type="date" class="mt-1 w-full rounded-lg border border-slate-300 p-2 text-base" /></label>
+              <label class="text-sm text-slate-500">Grade upload deadline<input v-model="d.gradeInput" type="date" class="mt-1 w-full rounded-lg border border-slate-300 p-2 text-base" /></label>
+            </div>
+          </div>
         </div>
         <button class="mt-3 rounded-xl bg-[#6d28d9] px-5 py-2.5 font-bold text-white hover:bg-[#5b21b6] disabled:opacity-60" :disabled="savingDl" @click="saveDeadlines">{{ savingDl ? 'Saving…' : 'Save deadlines' }}</button>
       </section>
 
       <!-- Grade tabs -->
-      <div class="flex flex-wrap gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <button v-for="s in schedules" :key="s.gradeLevel" class="rounded-lg border-2 px-3 py-1.5 text-sm font-semibold"
           :class="gradeLevel === s.gradeLevel ? 'border-[#6d28d9] bg-[#6d28d9] text-white' : 'border-slate-300 text-slate-700'"
           @click="gradeLevel = s.gradeLevel">{{ gLabel(s.gradeLevel) }}</button>
+        <button v-if="canEdit && availableGrades.length" class="rounded-lg border-2 border-dashed border-[#6d28d9] px-3 py-1.5 text-sm font-semibold text-[#6d28d9]" @click="showAddGrade = !showAddGrade">+ Add grade level</button>
+      </div>
+      <div v-if="showAddGrade" class="flex flex-wrap items-center gap-2 rounded-xl border border-[#e5e0f7] bg-white p-3">
+        <select v-model="newGrade" class="rounded-lg border border-slate-300 p-2">
+          <option value="" disabled>Select grade to add…</option>
+          <option v-for="g in availableGrades" :key="g" :value="g">{{ gLabel(g) }}</option>
+        </select>
+        <button class="rounded-lg bg-[#6d28d9] px-4 py-2 font-bold text-white disabled:opacity-60" :disabled="!newGrade || addingGrade" @click="addGrade">{{ addingGrade ? 'Adding…' : 'Add' }}</button>
+        <button class="rounded-lg border border-slate-300 px-4 py-2" @click="showAddGrade = false; newGrade = ''">Cancel</button>
       </div>
 
       <section v-if="current" class="overflow-hidden rounded-2xl border border-[#e5e0f7] bg-white">
@@ -151,6 +191,7 @@ const fmtVal = (v) => (typeof v === 'boolean' ? (v ? 'yes' : 'no') : (v == null 
         <button class="rounded-xl border-2 border-[#4c1d95] px-4 py-2 font-semibold text-[#4c1d95] hover:bg-[#f5f3ff]" @click="addLine">+ Add fee</button>
         <button class="rounded-xl bg-[#6d28d9] px-5 py-2.5 font-bold text-white hover:bg-[#5b21b6] disabled:opacity-60" :disabled="savingFees" @click="saveFees">{{ savingFees ? 'Saving…' : 'Save fees' }}</button>
         <button class="rounded-xl border-2 border-slate-400 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-100" @click="openHistory">Change history</button>
+        <button class="rounded-xl border-2 border-[#b91c1c] px-4 py-2 font-semibold text-[#b91c1c] hover:bg-[#fef2f2]" @click="deleteGrade">Delete grade level</button>
       </div>
     </div>
 

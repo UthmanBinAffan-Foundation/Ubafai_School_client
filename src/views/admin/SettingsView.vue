@@ -5,7 +5,7 @@ import { useSchoolYearStore } from '@/stores/schoolYear';
 const syStore = useSchoolYearStore();
 const newYear = ref('');
 async function addYear(){ if(!newYear.value.trim())return; await syStore.createYear(newYear.value.trim()); newYear.value=''; }
-async function activateYear(id){ await syStore.activate(id); }
+async function activateYear(id){ const y = syStore.years.find((x) => x._id === id); if (!confirm(`Set "${y?.label}" as the CURRENT school year? All new enrollments, payments, and grades will go to this year, and parents will see this year. Continue?`)) return; await syStore.activate(id); }
 
 const gating = ref({ mode: 'FULL', value: 100 });
 const methods = ref({ onlineMode: 'MANUAL', overTheCounter: true });
@@ -61,8 +61,8 @@ const removeAccount = (i) => accounts.value.splice(i, 1);
       <p class="text-sm text-slate-500">New years copy the current term structure. Set fees for the new year on the Fees page after activating.</p>
     </section>
 
-    <!-- Payment Methods -->
-    <section class="space-y-3 rounded-2xl border border-[#e5e0f7] bg-white p-5">
+    <!-- Payment Methods — HIDDEN per owner (default: Manual GCash/Bank + Over-the-Counter). Remove v-if="false" to restore. -->
+    <section v-if="false" class="space-y-3 rounded-2xl border border-[#e5e0f7] bg-white p-5">
       <h2 class="text-xl font-bold text-[#5b21b6]">Payment Methods</h2>
       <p class="text-slate-600">Pick <b>one</b> online method. Over-the-Counter can be enabled alongside it.</p>
 

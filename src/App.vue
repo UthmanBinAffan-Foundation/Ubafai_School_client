@@ -45,15 +45,16 @@ const ICONS = {
 
 const NAV = {
   admin: [
-    { to: '/admin', label: 'Dashboard', icon: 'dashboard' },
-    { to: '/admin/verify', label: 'Payment Verification', icon: 'verify' },
-    { to: '/admin/cash', label: 'Record Cash Payment', icon: 'cash' },
-    { to: '/admin/applications', label: 'Enrollment Application', icon: 'enroll' },
-    { to: '/admin/teachers', label: 'Teachers', icon: 'teachers' },
-    { to: '/admin/parents', label: 'Parents', icon: 'teachers' },
-    { to: '/admin/masterlist', label: 'Masterlist', icon: 'list' },
-    { to: '/fees', label: 'Fees', icon: 'fees' },
-    { to: '/admin/settings', label: 'Settings', icon: 'settings' },
+    { to: '/admin', label: 'Dashboard', icon: 'dashboard', perm: 'dashboard' },
+    { to: '/admin/verify', label: 'Payment Verification', icon: 'verify', perm: 'verify' },
+    { to: '/admin/cash', label: 'Record Cash Payment', icon: 'cash', perm: 'cash' },
+    { to: '/admin/applications', label: 'Enrollment Application', icon: 'enroll', perm: 'applications' },
+    { to: '/admin/teachers', label: 'Teachers', icon: 'teachers', perm: 'teachers' },
+    { to: '/admin/parents', label: 'Parents', icon: 'teachers', perm: 'parents' },
+    { to: '/admin/masterlist', label: 'Masterlist', icon: 'list', perm: 'masterlist' },
+    { to: '/fees', label: 'Fees', icon: 'fees', perm: 'fees' },
+    { to: '/admin/registrars', label: 'Registrars', icon: 'teachers', perm: 'registrars' },
+    { to: '/admin/settings', label: 'Settings', icon: 'settings', perm: 'settings' },
   ],
   guardian: [
     { to: '/portal', label: 'Balance', icon: 'wallet' },
@@ -68,6 +69,7 @@ const NAV = {
 
 const items = computed(() => {
   if (['ADMIN', 'SUPERADMIN'].includes(auth.role)) return NAV.admin;
+  if (auth.role === 'REGISTRAR') return NAV.admin.filter((i) => auth.permissions.includes(i.perm));
   if (auth.role === 'GUARDIAN') return NAV.guardian;
   if (auth.role === 'TEACHER') return NAV.teacher;
   return [];
@@ -84,8 +86,7 @@ const PAGES = {
   '/admin/masterlist': { title: 'Student List', icon: 'list' },
   '/admin/settings':   { title: 'Settings',                icon: 'settings' },
   '/portal':           { title: "Children's Balances",        icon: 'wallet' },
-  '/portal/pay':       { title: 'Submit Payment',            icon: 'card' },
-  '/portal/enroll':    { title: 'Enroll a Child',             icon: 'enroll' },
+  '/portal/pay':       { title: 'Submit Payment',         icon: 'card' },
   '/teacher':          { title: 'Encode Grades',       icon: 'grades' },
 };
 const currentPage = computed(() => {
@@ -139,7 +140,12 @@ const currentPage = computed(() => {
             <p class="hidden text-xs text-slate-500 sm:block">Management System</p>
           </div>
           <div class="ml-auto flex items-center gap-3 text-right">
-            <span v-if="isAdmin() && activeYearLabel" class="hidden text-sm font-medium text-[#4c1d95] sm:block">Data for School Year: {{ activeYearLabel }}</span>
+            <div v-if="isAdmin() && syStore.years.length" class="hidden items-center gap-1 sm:flex">
+              <span class="text-sm text-slate-500">Viewing:</span>
+              <select v-model="syStore.selected" class="rounded-lg border border-slate-300 px-2 py-1 text-sm font-semibold text-[#4c1d95]">
+                <option v-for="y in syStore.years" :key="y._id" :value="y._id">{{ y.label }}{{ y.isActive ? ' (current)' : '' }}</option>
+              </select>
+            </div>
             <div class="hidden sm:block leading-tight">
               <p class="text-xs text-slate-500">Logged in as</p>
               <p class="font-semibold text-[#241b33]">{{ auth.user?.username }}
@@ -157,6 +163,11 @@ const currentPage = computed(() => {
           <h1 class="text-xl font-bold text-[#5b21b6]">{{ currentPage.title }}</h1>
         </div>
       </header>
+
+      <div v-if="isAdmin() && syStore.isViewingPast" class="bg-[#fef3c7] px-4 py-2 text-center text-sm text-[#7c5b0a]">
+        Viewing a previous school year (<b>{{ syStore.selectedLabel }}</b>). New enrollments and payments still go to the current year (<b>{{ syStore.activeLabel }}</b>).
+        <button class="ml-2 rounded bg-[#7c5b0a] px-2 py-0.5 font-semibold text-white" @click="syStore.resetView()">Back to current</button>
+      </div>
 
       <main class="mx-auto max-w-4xl p-4 lg:p-8"><router-view /></main>
     </div>

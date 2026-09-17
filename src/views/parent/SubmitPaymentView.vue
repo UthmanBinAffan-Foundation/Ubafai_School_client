@@ -11,7 +11,6 @@ const selected = ref({});
 const amount = ref(null);
 const choice = ref('');
 const form = ref({ student: '', referenceNo: '', account: '' });
-const proofFile = ref(null);
 const submitting = ref(false); const done = ref(false); const error = ref('');
 const cancelled = ref(route.query.cancelled === '1');
 
@@ -54,7 +53,6 @@ const options = computed(() => {
 const accounts = computed(() => school.value.payoutAccounts || []);
 const fee = computed(() => { const b = Number(amount.value) || 0; const p = school.value.paymongo || {}; return Math.round((b * (p.feePercent || 0)) / 100 + (p.feeFixed || 0)); });
 const gross = computed(() => (Number(amount.value) || 0) + fee.value);
-const onFile = (e) => { proofFile.value = e.target.files?.[0] || null; };
 
 async function submitManual() {
   error.value = '';
@@ -62,14 +60,13 @@ async function submitManual() {
   submitting.value = true;
   try {
     const acct = accounts.value.find((a) => a.number === form.value.account);
-    const fd = new FormData();
-    fd.append('student', form.value.student);
-    fd.append('amount', amount.value);
-    fd.append('method', acct?.method || 'GCASH');
-    fd.append('referenceNo', form.value.referenceNo);
-    fd.append('payKeys', JSON.stringify(selectedKeys.value));
-    if (proofFile.value) fd.append('proof', proofFile.value);
-    await http.post('/payments', fd);
+    await http.post('/payments', {
+      student: form.value.student,
+      amount: amount.value,
+      method: acct?.method || 'GCASH',
+      referenceNo: form.value.referenceNo,
+      payKeys: selectedKeys.value,
+    });
     done.value = true;
   } catch (e) { error.value = e?.response?.data?.message || 'Could not send. Please try again.'; }
   finally { submitting.value = false; }
@@ -158,8 +155,6 @@ async function payOnline() {
             <label class="block"><span class="text-lg font-semibold">Reference No.</span>
               <input v-model="form.referenceNo" class="mt-1 w-full rounded-lg border border-slate-300 p-3 text-lg tabular-nums" /></label>
           </div>
-          <label class="block"><span class="text-lg font-semibold">Receipt photo <span class="font-normal text-slate-500">(optional)</span></span>
-            <input type="file" accept="image/*" class="mt-1 w-full text-lg" @change="onFile" /></label>
           <button class="inline-flex min-h-[56px] w-full items-center justify-center rounded-xl bg-[#6d28d9] px-6 text-xl font-bold text-white hover:bg-[#5b21b6] disabled:opacity-60" :disabled="submitting" @click="submitManual">{{ submitting ? 'Sending…' : 'Submit payment' }}</button>
         </template>
 

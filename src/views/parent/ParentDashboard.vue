@@ -1,9 +1,11 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import http from '@/api/http';
 import { enablePush, isPushSubscribed } from '@/push';
 
 const children = ref([]);
+const history = ref([]);
+const previous = computed(() => history.value.filter((h) => !h.isActive));
 const loading = ref(false);
 const error = ref('');
 const lrnMsg = ref('');
@@ -24,8 +26,11 @@ const prettyLevel = (g) => (g || '').replace('_', ' ');
 
 async function load() {
   loading.value = true; error.value = '';
-  try { children.value = (await http.get('/students/mine')).data; }
-  catch { error.value = 'Could not load data. Please try again.'; }
+  try {
+    const [mine, hist] = await Promise.all([http.get('/students/mine'), http.get('/students/mine/history')]);
+    children.value = mine.data;
+    history.value = hist.data;
+  } catch { error.value = 'Could not load data. Please try again.'; }
   finally { loading.value = false; }
 }
 
@@ -123,6 +128,21 @@ onMounted(async () => { await load(); if (await isPushSubscribed()) pushState.va
             </router-link>
           </div>
         </div>
+      </section>
+
+      <section v-if="previous.length" class="rounded-2xl border border-[#e5e0f7] bg-white p-5">
+        <h2 class="mb-2 text-xl font-bold text-[#5b21b6]">Previous School Years</h2>
+        <ul class="space-y-2">
+          <li v-for="p in previous" :key="p._id" class="flex flex-wrap items-center justify-between gap-2 border-b border-[#f1eefb] pb-2">
+            <div>
+              <span class="font-semibold">{{ p.name }}</span>
+              <span class="ml-2 text-slate-500">{{ p.schoolYear }} · {{ prettyLevel(p.gradeLevel) }}</span>
+              <span v-if="p.balance > 0" class="ml-2 rounded bg-[#fef3c7] px-2 py-0.5 text-sm font-semibold text-[#b45309]">Balance: {{ peso(p.balance) }}</span>
+              <span v-else class="ml-2 rounded bg-[#dcfce7] px-2 py-0.5 text-sm font-semibold text-[#15803d]">Fully paid</span>
+            </div>
+            <router-link :to="'/portal/ledger/' + p._id" class="rounded-lg border border-[#4c1d95] px-3 py-1.5 text-sm font-semibold text-[#4c1d95]">View ledger</router-link>
+          </li>
+        </ul>
       </section>
     </div>
   </div>

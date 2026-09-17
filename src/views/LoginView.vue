@@ -1,21 +1,24 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { isInstalled, promptInstall } from '@/pwa';
+import { defaultRouteFor } from '@/permissions';
 
 const username = ref(''); const password = ref(''); const error = ref('');
 const showPassword = ref(false);
 const loading = ref(false);
 const auth = useAuthStore(); const router = useRouter();
+const dash = () => defaultRouteFor(auth.role, auth.permissions);
+onMounted(() => { if (auth.isAuthed) router.replace(dash()); });
 const logoOk = ref(true);
 const showTerms = ref(false);
 
 async function submit() {
   error.value = ''; loading.value = true;
   try {
-    const user = await auth.login(username.value, password.value);
-    router.push(user.role === 'GUARDIAN' ? '/portal' : user.role === 'TEACHER' ? '/teacher' : '/admin');
+    await auth.login(username.value, password.value);
+    await router.replace(dash());
   } catch (e) { error.value = e?.response?.data?.message || 'Incorrect username or password'; }
   finally { loading.value = false; }
 }
