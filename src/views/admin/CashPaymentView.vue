@@ -2,7 +2,9 @@
 import { ref, computed, watch } from 'vue';
 import { onMounted } from 'vue';
 import http from '@/api/http';
+import { useToast } from '@/toast';
 
+const toast = useToast();
 const students = ref([]);
 const items = ref([]);
 const payments = ref([]);
@@ -58,7 +60,7 @@ const selectedKeys = computed(() => Object.keys(selected.value).filter((k) => se
 
 async function submit() {
   error.value = ''; done.value = '';
-  if (!form.value.student || !selectedKeys.value.length || !amount.value) { error.value = 'Select fee(s) and enter an amount.'; return; }
+  if (!form.value.student || !selectedKeys.value.length || !amount.value) { toast.warn('Please tick at least one fee and enter an amount.'); return; }
   saving.value = true;
   try {
     await http.post('/payments', {

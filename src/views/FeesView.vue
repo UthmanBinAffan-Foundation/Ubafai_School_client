@@ -1,13 +1,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import http from '@/api/http';
+import { useToast } from '@/toast';
 import { useAuthStore } from '@/stores/auth';
 
 const auth = useAuthStore();
+const toast = useToast();
 const isAdmin = computed(() => ['ADMIN', 'SUPERADMIN'].includes(auth.role));
 const canEdit = computed(() => isAdmin.value || (auth.role === 'REGISTRAR' && auth.permissions.includes('fees')));
 
-const CATEGORIES = ['TUITION', 'BOOKS', 'BUS', 'PE_UNIFORM', 'SCHOOL_ID', 'GRADUATION', 'APPLICATION', 'MISC'];
+const CATEGORIES = ['TUITION', 'BOOKS', 'BUS', 'UNIFORM', 'SCHOOL_ID', 'GRADUATION', 'APPLICATION', 'MISC'];
 const GRADE_LABEL = { NURSERY: 'Nursery', KINDER_1: 'Kinder 1', KINDER_2: 'Kinder 2', GRADE_1: 'Grade 1', GRADE_2: 'Grade 2', GRADE_3: 'Grade 3', GRADE_4: 'Grade 4', GRADE_5: 'Grade 5', GRADE_6: 'Grade 6', GRADE_7: 'Grade 7', GRADE_8: 'Grade 8', GRADE_9: 'Grade 9', GRADE_10: 'Grade 10', GRADE_11: 'Grade 11', GRADE_12: 'Grade 12' };
 const ALL_GRADES = ['NURSERY', 'KINDER_1', 'KINDER_2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9', 'GRADE_10', 'GRADE_11', 'GRADE_12'];
 const gLabel = (g) => GRADE_LABEL[g] || g;
@@ -65,7 +67,7 @@ async function deleteGrade() {
     schedules.value = schedules.value.filter((s) => s.gradeLevel !== gradeLevel.value);
     gradeLevel.value = schedules.value[0]?.gradeLevel || '';
     msg.value = 'Grade level deleted.';
-  } catch (e) { error.value = e?.response?.data?.message || 'Could not delete grade level.'; }
+  } catch (e) { toast.error(e?.response?.data?.message || 'Could not delete grade level.'); }
 }
 async function addGrade() {
   if (!newGrade.value) return;

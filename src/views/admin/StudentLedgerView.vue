@@ -4,7 +4,8 @@ import { useRoute } from 'vue-router';
 import http from '@/api/http';
 
 const route = useRoute();
-const student = ref(null); const assessment = ref(null); const payments = ref([]); const items = ref([]);
+const student = ref(null);
+const returning = ref(false); const assessment = ref(null); const payments = ref([]); const items = ref([]);
 const loading = ref(false); const error = ref(''); const msg = ref('');
 const editing = ref(false); const form = ref({});
 const disc = ref({}); const showDisc = ref(false);
@@ -34,7 +35,9 @@ async function load() {
       http.get(`/students/${route.params.id}/ledger`),
       http.get(`/students/${route.params.id}/ledger-items`),
     ]);
-    student.value = led.data.student; assessment.value = led.data.assessment; payments.value = led.data.payments || [];
+    student.value = led.data.student; assessment.value = led.data.assessment;
+    payments.value = (led.data.payments || []).slice().sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate));
+    returning.value = !!led.data.returning;
     items.value = it.data.items;
     form.value = { surname: student.value.surname, givenName: student.value.givenName, middleName: student.value.middleName || '', lrn: student.value.lrn || '', gradeLevel: student.value.gradeLevel, gender: student.value.gender || '', status: student.value.status };
     disc.value = {}; (assessment.value?.lines || []).forEach((l) => { disc.value[l._id] = l.discount || 0; });
@@ -71,7 +74,8 @@ async function saveDiscounts() {
       <section class="rounded-2xl border border-[#e5e0f7] bg-white p-5">
         <div v-if="!editing" class="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p class="text-2xl font-bold">{{ student.surname }}, {{ student.givenName }} {{ student.middleName }}</p>
+            <p class="text-2xl font-bold">{{ student.surname }}, {{ student.givenName }} {{ student.middleName }}
+              <span class="ml-2 rounded px-2 py-0.5 text-sm font-semibold align-middle" :class="returning ? 'bg-[#dbeafe] text-[#1e40af]' : 'bg-[#dcfce7] text-[#15803d]'">{{ returning ? 'Returning student' : 'New student' }}</span></p>
             <p class="text-slate-600">{{ prettyLevel(student.gradeLevel) }} &middot; LRN: {{ student.lrn || '—' }}
               <span class="ml-2 rounded px-2 py-0.5 text-sm font-semibold" :class="student.status === 'ACTIVE' ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#fee2e2] text-[#b91c1c]'">{{ student.status }}</span>
             </p>

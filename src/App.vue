@@ -3,11 +3,13 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useSchoolYearStore } from '@/stores/schoolYear';
+import ToastHost from '@/components/ToastHost.vue';
 
 const auth = useAuthStore();
 const syStore = useSchoolYearStore();
 const router = useRouter();
 const isAdmin = () => ['ADMIN', 'SUPERADMIN'].includes(auth.role);
+const showYearPicker = computed(() => isAdmin() && syStore.years.length && (route.path.startsWith('/admin/masterlist') || route.path.startsWith('/fees')));
 const activeYearLabel = computed(() => syStore.years.find((y) => y.isActive)?.label || '');
 watch(() => auth.isAuthed, (v) => { if (v && isAdmin()) syStore.load(); }, { immediate: true });
 const route = useRoute();
@@ -140,7 +142,7 @@ const currentPage = computed(() => {
             <p class="hidden text-xs text-slate-500 sm:block">Management System</p>
           </div>
           <div class="ml-auto flex items-center gap-3 text-right">
-            <div v-if="isAdmin() && syStore.years.length" class="hidden items-center gap-1 sm:flex">
+            <div v-if="showYearPicker" class="hidden items-center gap-1 sm:flex">
               <span class="text-sm text-slate-500">Viewing:</span>
               <select v-model="syStore.selected" class="rounded-lg border border-slate-300 px-2 py-1 text-sm font-semibold text-[#4c1d95]">
                 <option v-for="y in syStore.years" :key="y._id" :value="y._id">{{ y.label }}{{ y.isActive ? ' (current)' : '' }}</option>
@@ -170,6 +172,7 @@ const currentPage = computed(() => {
       </div>
 
       <main class="mx-auto max-w-4xl p-4 lg:p-8"><router-view /></main>
+      <ToastHost />
     </div>
   </div>
 </template>

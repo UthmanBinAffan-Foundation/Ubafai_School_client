@@ -27,6 +27,7 @@ const routes = [
   { path: '/portal/enroll', component: () => import('@/views/parent/ParentEnrollView.vue'), meta: { roles: ['GUARDIAN'] } },
   { path: '/portal/grades/:id', component: () => import('@/views/parent/GradesView.vue'), meta: { roles: ['GUARDIAN'] } },
   { path: '/portal/ledger/:id', component: () => import('@/views/parent/ParentLedgerView.vue'), meta: { roles: ['GUARDIAN'] } },
+  { path: '/portal/student/:id/edit', component: () => import('@/views/parent/ParentStudentEditView.vue'), meta: { roles: ['GUARDIAN'] } },
 
   { path: '/teacher', component: () => import('@/views/teacher/GradeEncodeView.vue'), meta: { roles: ['TEACHER', 'ADMIN', 'SUPERADMIN'] } },
 ];

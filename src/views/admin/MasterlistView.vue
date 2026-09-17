@@ -55,7 +55,8 @@ const openStudent = (id) => router.push(`/admin/student/${id}`);
         </thead>
         <tbody>
           <tr v-for="s in filtered" :key="s._id" class="cursor-pointer border-t border-[#f1eefb] hover:bg-[#f5f3ff]" @click="openStudent(s._id)">
-            <td class="p-4 text-lg font-semibold">{{ s.surname }}, {{ s.givenName }}</td>
+            <td class="p-4 text-lg font-semibold">{{ s.surname }}, {{ s.givenName }}
+              <span class="ml-1 rounded px-1.5 py-0.5 text-xs font-semibold" :class="s.returning ? 'bg-[#dbeafe] text-[#1e40af]' : 'bg-[#dcfce7] text-[#15803d]'">{{ s.returning ? 'Returning' : 'New' }}</span></td>
             <td class="p-4 text-lg">{{ prettyLevel(s.gradeLevel) }}</td>
             <td class="hidden p-4 tabular-nums text-slate-600 sm:table-cell">{{ s.lrn || '\u2014' }}</td>
             <td class="p-4 text-right text-lg font-bold">

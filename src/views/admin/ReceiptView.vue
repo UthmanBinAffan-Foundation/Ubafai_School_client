@@ -31,10 +31,13 @@ const doPrint = () => window.print();
     <div v-if="data" class="printable mx-auto max-w-[800px] bg-white p-8 text-[13px] leading-relaxed" style="border:1px solid #e5e0f7;">
       <!-- Header -->
       <div class="flex items-start justify-between border-b-2 border-[#4c1d95] pb-3">
-        <div>
+        <div class="flex items-start gap-3">
+          <img src="/logo192.png" alt="Logo" class="h-14 w-14 object-contain" />
+          <div>
           <p class="text-xl font-bold text-[#4c1d95]">{{ data.school.name }}</p>
           <p class="text-slate-600">{{ data.school.address }}</p>
           <p class="text-slate-500">School Year: {{ data.schoolYear }}</p>
+          </div>
         </div>
         <div class="text-right">
           <p class="text-lg font-bold">OFFICIAL RECEIPT</p>

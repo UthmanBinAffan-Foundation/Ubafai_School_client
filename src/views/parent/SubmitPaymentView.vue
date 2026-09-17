@@ -2,9 +2,11 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import http from '@/api/http';
+import { useToast } from '@/toast';
 
 const route = useRoute();
 const children = ref([]);
+const toast = useToast();
 const school = ref({ paymentMethods: {}, paymongo: { feePercent: 0, feeFixed: 0 }, payoutAccounts: [] });
 const items = ref([]);
 const selected = ref({});
@@ -56,7 +58,7 @@ const gross = computed(() => (Number(amount.value) || 0) + fee.value);
 
 async function submitManual() {
   error.value = '';
-  if (!form.value.student || !selectedKeys.value.length || !amount.value || !form.value.referenceNo) { error.value = 'Select fee(s), amount, and reference number.'; return; }
+  if (!form.value.student || !selectedKeys.value.length || !amount.value || !form.value.referenceNo) { toast.warn('Please tick fee(s), enter an amount, and the reference number.'); return; }
   submitting.value = true;
   try {
     const acct = accounts.value.find((a) => a.number === form.value.account);

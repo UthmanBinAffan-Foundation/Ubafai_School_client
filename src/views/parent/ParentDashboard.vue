@@ -6,6 +6,7 @@ import { enablePush, isPushSubscribed } from '@/push';
 const children = ref([]);
 const history = ref([]);
 const previous = computed(() => history.value.filter((h) => !h.isActive));
+const previousTotal = computed(() => previous.value.reduce((a, p) => a + (p.balance || 0), 0));
 const loading = ref(false);
 const error = ref('');
 const lrnMsg = ref('');
@@ -80,6 +81,7 @@ onMounted(async () => { await load(); if (await isPushSubscribed()) pushState.va
             <h2 class="text-2xl font-bold">{{ c.student.surname }}, {{ c.student.givenName }}</h2>
             <span class="text-lg text-slate-500">{{ prettyLevel(c.student.gradeLevel) }}</span>
           </div>
+          <router-link :to="'/portal/student/' + c.student._id + '/edit'" class="mt-1 inline-block text-sm font-semibold text-[#4c1d95] underline">Update student info</router-link>
           <div v-if="!c.student.lrn" class="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-[#fef9e7] p-2">
             <span class="text-sm font-semibold text-[#7c5b0a]">Add LRN (if known):</span>
             <input v-model="lrnInputs[c.student._id]" placeholder="LRN" class="rounded border border-slate-300 p-1 text-sm tabular-nums" />
@@ -132,6 +134,7 @@ onMounted(async () => { await load(); if (await isPushSubscribed()) pushState.va
 
       <section v-if="previous.length" class="rounded-2xl border border-[#e5e0f7] bg-white p-5">
         <h2 class="mb-2 text-xl font-bold text-[#5b21b6]">Previous School Years</h2>
+        <p v-if="previousTotal > 0" class="mb-2 rounded-lg bg-[#fef3c7] px-3 py-2 font-semibold text-[#b45309]">Total unpaid from previous year(s): {{ peso(previousTotal) }}</p>
         <ul class="space-y-2">
           <li v-for="p in previous" :key="p._id" class="flex flex-wrap items-center justify-between gap-2 border-b border-[#f1eefb] pb-2">
             <div>
