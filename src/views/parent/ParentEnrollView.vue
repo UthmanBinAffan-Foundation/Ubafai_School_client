@@ -1,13 +1,14 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useToast } from '@/toast';
 import http from '@/api/http';
 
 const GRADE_LABEL = { NURSERY: 'Nursery', KINDER_1: 'Kinder 1', KINDER_2: 'Kinder 2', GRADE_1: 'Grade 1', GRADE_2: 'Grade 2', GRADE_3: 'Grade 3', GRADE_4: 'Grade 4', GRADE_5: 'Grade 5', GRADE_6: 'Grade 6' };
 const gLabel = (g) => GRADE_LABEL[g] || g;
-const peso = (n) => `₱${Number(n || 0).toLocaleString('en-PH')}`;
+const peso = (n) => `\u20B1${Number(n || 0).toLocaleString('en-PH')}`;
 
 const info = ref({ grades: [], applicationFeeByGrade: {}, payoutAccounts: [], children: [] });
-const mode = ref('returning');
+const mode = ref('returning');           // 'returning' | 'new'
 const sourceStudentId = ref('');
 const newStudent = ref({ surname: '', givenName: '', middleName: '', lrn: '', birthdate: '', gender: '' });
 const gradeLevel = ref('');
@@ -15,6 +16,8 @@ const step = ref(1);
 const appId = ref(''); const appFee = ref(0);
 const feeForm = ref({ method: 'GCASH', referenceNo: '' });
 const busy = ref(false); const error = ref('');
+const toast = useToast();
+watch(error, (v) => { if (v) toast.error(v); });
 
 onMounted(async () => {
   try {
@@ -26,6 +29,7 @@ onMounted(async () => {
 
 const feeForGrade = computed(() => info.value.applicationFeeByGrade[gradeLevel.value] || 0);
 const selectedChild = computed(() => info.value.children.find((c) => c._id === sourceStudentId.value));
+
 async function submitApplication() {
   error.value = '';
   if (!gradeLevel.value) { error.value = 'Select the grade to enroll in.'; return; }
@@ -41,6 +45,10 @@ async function submitApplication() {
     step.value = 2;
   } catch (e) { error.value = e?.response?.data?.message || 'Could not submit. Please try again.'; }
   finally { busy.value = false; }
+}
+async function goBackToEdit() {
+  if (appId.value) { try { await http.delete(`/apply/${appId.value}`); } catch (e) { /* ignore */ } appId.value = ''; }
+  step.value = 1;
 }
 async function submitFee() {
   error.value = '';
@@ -59,7 +67,9 @@ async function submitFee() {
     <p class="mb-6 text-lg text-slate-600">Enroll a child for the current school year.</p>
     <p v-if="error" class="mb-4 rounded-xl bg-[#fee2e2] px-5 py-3 font-semibold text-[#b91c1c]">{{ error }}</p>
 
+    <!-- Step 1 -->
     <div v-if="step === 1" class="space-y-4 rounded-2xl border border-[#e5e0f7] bg-white p-6">
+      <!-- Mode -->
       <div class="flex flex-wrap gap-2">
         <button class="rounded-xl border-2 px-4 py-2.5 text-left" :class="mode === 'returning' ? 'border-[#6d28d9] bg-[#6d28d9] text-white' : 'border-slate-300 text-slate-700'" @click="mode = 'returning'">
           <span class="block font-semibold">Returning child</span><span class="text-sm" :class="mode==='returning' ? 'text-white/80' : 'text-slate-500'">Already enrolled before</span>
@@ -69,6 +79,7 @@ async function submitFee() {
         </button>
       </div>
 
+      <!-- Returning: pick existing child -->
       <template v-if="mode === 'returning'">
         <label class="block"><span class="text-lg font-semibold">Which child?</span>
           <select v-model="sourceStudentId" class="mt-1 w-full rounded-lg border border-slate-300 p-3 text-lg">
@@ -80,6 +91,7 @@ async function submitFee() {
         <p v-if="selectedChild" class="text-sm text-slate-500">Current record: {{ gLabel(selectedChild.gradeLevel) }} · LRN: {{ selectedChild.lrn || '—' }}</p>
       </template>
 
+      <!-- New: student info -->
       <template v-else>
         <div class="grid gap-3 sm:grid-cols-2">
           <input v-model="newStudent.surname" placeholder="Surname" class="rounded-lg border border-slate-300 p-3" />
@@ -91,6 +103,7 @@ async function submitFee() {
         </div>
       </template>
 
+      <!-- Grade to enroll in -->
       <label class="block"><span class="text-lg font-semibold">Grade to enroll in</span>
         <select v-model="gradeLevel" class="mt-1 w-full rounded-lg border border-slate-300 p-3 text-lg">
           <option value="" disabled>Select grade…</option>
@@ -102,6 +115,7 @@ async function submitFee() {
       <button class="inline-flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#6d28d9] text-lg font-bold text-white hover:bg-[#5b21b6] disabled:opacity-60" :disabled="busy" @click="submitApplication">{{ busy ? 'Submitting…' : 'Continue to payment' }}</button>
     </div>
 
+    <!-- Step 2: application fee -->
     <div v-else-if="step === 2" class="space-y-4 rounded-2xl border border-[#e5e0f7] bg-white p-6">
       <h2 class="text-xl font-bold text-[#5b21b6]">Pay the Application Fee</h2>
       <p class="text-lg">Application fee: <b>{{ peso(appFee) }}</b></p>
@@ -116,9 +130,13 @@ async function submitFee() {
         </select>
         <input v-model="feeForm.referenceNo" placeholder="Reference number" class="rounded-lg border border-slate-300 p-3 tabular-nums" />
       </div>
-      <button class="inline-flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#6d28d9] text-lg font-bold text-white hover:bg-[#5b21b6] disabled:opacity-60" :disabled="busy" @click="submitFee">{{ busy ? 'Submitting…' : 'Submit application' }}</button>
+      <div class="flex gap-2">
+        <button class="inline-flex min-h-[54px] items-center justify-center rounded-xl border-2 border-slate-400 px-5 text-lg font-semibold text-slate-700 disabled:opacity-60" :disabled="busy" @click="goBackToEdit">Back</button>
+        <button class="inline-flex min-h-[54px] flex-1 items-center justify-center rounded-xl bg-[#6d28d9] text-lg font-bold text-white hover:bg-[#5b21b6] disabled:opacity-60" :disabled="busy" @click="submitFee">{{ busy ? 'Submitting…' : 'Submit application' }}</button>
+      </div>
     </div>
 
+    <!-- Step 3: done -->
     <div v-else class="rounded-2xl bg-[#dcfce7] p-6 text-center">
       <p class="text-2xl font-bold text-[#15803d]">Application submitted!</p>
       <p class="mt-2 text-slate-700">The school will review your application fee. Once approved, the enrollment will appear in your balance.</p>

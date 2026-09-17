@@ -5,9 +5,12 @@ import http from '@/api/http';
 
 const route = useRoute();
 const data = ref(null); const loading = ref(true); const error = ref('');
+import { computed } from 'vue';
+const totalBalance = computed(() => (data.value?.items || []).reduce((a, i) => a + (i.balance || 0), 0));
 const peso = (n) => `\u20B1${Number(n || 0).toLocaleString('en-PH')}`;
 const GRADE_LABEL = { NURSERY: 'Nursery', KINDER_1: 'Kinder 1', KINDER_2: 'Kinder 2', GRADE_1: 'Grade 1', GRADE_2: 'Grade 2', GRADE_3: 'Grade 3', GRADE_4: 'Grade 4', GRADE_5: 'Grade 5', GRADE_6: 'Grade 6', GRADE_7: 'Grade 7', GRADE_8: 'Grade 8', GRADE_9: 'Grade 9', GRADE_10: 'Grade 10', GRADE_11: 'Grade 11', GRADE_12: 'Grade 12' };
 const gLabel = (g) => GRADE_LABEL[g] || g;
+const fmtDateTime = (d) => (d ? new Date(d).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '\u2014');
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
 const statusText = (s) => (s === 'PAID' ? 'Paid' : s === 'PARTIAL' ? 'Partially Paid' : 'Not Paid');
 const statusClass = (s) => (s === 'PAID' ? 'text-[#15803d]' : s === 'PARTIAL' ? 'text-[#b45309]' : 'text-[#b91c1c]');
@@ -29,6 +32,11 @@ onMounted(async () => {
       <div>
         <h1 class="text-2xl font-bold text-[#4c1d95]">{{ data.student.name }}</h1>
         <p class="text-slate-600">{{ gLabel(data.student.gradeLevel) }} · School Year {{ data.student.schoolYear }}</p>
+      </div>
+
+      <div class="rounded-2xl bg-[#f5f3ff] p-5">
+        <p class="text-base font-semibold text-[#5b21b6]">Total Balance</p>
+        <p class="mt-1 text-3xl font-bold tabular-nums" :class="totalBalance > 0 ? 'text-[#b91c1c]' : 'text-[#15803d]'">{{ totalBalance > 0 ? peso(totalBalance) : 'Fully paid' }}</p>
       </div>
 
       <!-- Ledger -->
@@ -60,7 +68,7 @@ onMounted(async () => {
               <span class="font-semibold tabular-nums">{{ peso(p.amount) }}</span>
               <span class="ml-2 text-slate-500">{{ p.method }}</span>
               <span v-if="p.referenceNo" class="ml-2 text-slate-500 tabular-nums">#{{ p.referenceNo }}</span>
-              <span class="ml-2 text-slate-400">{{ fmtDate(p.paymentDate) }}</span>
+              <span class="ml-2 text-slate-400">{{ fmtDateTime(p.paymentDate) }}</span>
               <span v-if="p.receiptNo" class="ml-2 text-slate-400 tabular-nums">{{ p.receiptNo }}</span>
             </div>
             <span class="rounded px-2 py-0.5 text-sm font-semibold" :class="p.status === 'VERIFIED' ? 'bg-[#dcfce7] text-[#15803d]' : p.status === 'REVERSED' ? 'bg-slate-200 text-slate-600' : p.status === 'REJECTED' ? 'bg-[#fee2e2] text-[#b91c1c]' : 'bg-[#fef3c7] text-[#b45309]'">{{ p.status }}</span>

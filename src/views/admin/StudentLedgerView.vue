@@ -14,6 +14,7 @@ const savingDisc = ref(false); const savingStudent = ref(false);
 const peso = (n) => `\u20B1${Number(n || 0).toLocaleString('en-PH')}`;
 const prettyLevel = (g) => (g || '').replace('_', ' ');
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '—');
+const fmtDateTime = (d) => (d ? new Date(d).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '\u2014');
 const fmtDates = (arr) => (arr && arr.length ? arr.map((d) => new Date(d).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })).join(', ') : '—');
 const statusText = (s) => (s === 'PAID' ? 'Paid' : s === 'PARTIAL' ? 'Partially Paid' : 'Not Paid');
 const statusClass = (s) => (s === 'PAID' ? 'bg-[#dcfce7] text-[#15803d]' : s === 'PARTIAL' ? 'bg-[#fef3c7] text-[#b45309]' : 'bg-[#fee2e2] text-[#b91c1c]');
@@ -136,7 +137,7 @@ async function saveDiscounts() {
               <span class="font-semibold tabular-nums">{{ peso(p.amount) }}</span>
               <span class="ml-2 text-slate-500">{{ p.method }}</span>
               <span v-if="p.referenceNo" class="ml-2 text-slate-500 tabular-nums">#{{ p.referenceNo }}</span>
-              <span class="ml-2 text-slate-400">{{ fmtDate(p.paymentDate) }}</span>
+              <span class="ml-2 text-slate-400">{{ fmtDateTime(p.paymentDate) }}</span>
               <span v-if="p.receiptNo" class="ml-2 text-slate-400 tabular-nums">{{ p.receiptNo }}</span>
             </div>
             <div class="flex items-center gap-2">

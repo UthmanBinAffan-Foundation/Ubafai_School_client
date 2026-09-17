@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useToast } from '@/toast';
 import http from '@/api/http';
 
 const GRADE_LABEL = { NURSERY: 'Nursery', KINDER_1: 'Kinder 1', KINDER_2: 'Kinder 2', GRADE_1: 'Grade 1', GRADE_2: 'Grade 2', GRADE_3: 'Grade 3', GRADE_4: 'Grade 4', GRADE_5: 'Grade 5', GRADE_6: 'Grade 6' };
@@ -13,15 +14,15 @@ const guardian = ref({ name: '', mobile: '', email: '', username: '', password: 
 const confirmPw = ref('');
 const appId = ref(''); const appFee = ref(0);
 const feeForm = ref({ method: 'GCASH', referenceNo: '' });
-const proofFile = ref(null);
 const busy = ref(false); const error = ref('');
+const toast = useToast();
+watch(error, (v) => { if (v) toast.error(v); });
 
 onMounted(async () => {
   try { info.value = (await http.get('/apply/info')).data; }
   catch { error.value = 'Could not load. Please try again later.'; }
 });
 const feeForGrade = computed(() => info.value.applicationFeeByGrade[student.value.gradeLevel] || 0);
-const onFile = (e) => { proofFile.value = e.target.files?.[0] || null; };
 
 async function submitApplication() {
   error.value = '';
@@ -39,6 +40,10 @@ async function submitApplication() {
   } catch (e) { error.value = e?.response?.data?.message || 'Could not submit. Please try again.'; }
   finally { busy.value = false; }
 }
+async function goBackToEdit() {
+  if (appId.value) { try { await http.delete(`/apply/${appId.value}`); } catch (e) { /* ignore */ } appId.value = ''; }
+  step.value = 1;
+}
 async function submitFee() {
   error.value = '';
   if (!feeForm.value.referenceNo) { error.value = 'Enter the payment reference number.'; return; }
@@ -54,7 +59,7 @@ async function submitFee() {
 <template>
   <div class="mx-auto mt-8 max-w-xl">
     <div class="mb-5 text-center">
-      <div class="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6d28d9] to-[#4c1d95] text-xl font-bold text-white">U</div>
+      <img src="/logo192.png" alt="Logo" class="mx-auto mb-2 h-14 w-14 rounded-2xl object-contain" />
       <h1 class="text-2xl font-bold text-[#4c1d95]">Enrollment Application</h1>
       <p class="text-slate-500">{{ info.schoolName }}</p>
     </div>
@@ -111,7 +116,10 @@ async function submitFee() {
         </select>
         <input v-model="feeForm.referenceNo" placeholder="Reference number" class="rounded-lg border border-slate-300 p-3 tabular-nums" />
       </div>
-      <button class="inline-flex min-h-[54px] w-full items-center justify-center rounded-xl bg-[#6d28d9] text-lg font-bold text-white hover:bg-[#5b21b6] disabled:opacity-60" :disabled="busy" @click="submitFee">{{ busy ? 'Submitting…' : 'Submit application' }}</button>
+      <div class="flex gap-2">
+        <button class="inline-flex min-h-[54px] items-center justify-center rounded-xl border-2 border-slate-400 px-5 text-lg font-semibold text-slate-700 disabled:opacity-60" :disabled="busy" @click="goBackToEdit">Back</button>
+        <button class="inline-flex min-h-[54px] flex-1 items-center justify-center rounded-xl bg-[#6d28d9] text-lg font-bold text-white hover:bg-[#5b21b6] disabled:opacity-60" :disabled="busy" @click="submitFee">{{ busy ? 'Submitting…' : 'Submit application' }}</button>
+      </div>
     </div>
 
     <!-- Step 3: done -->

@@ -9,6 +9,7 @@ function goBack() { if (window.history.length > 1) router.back(); else router.pu
 const data = ref(null); const error = ref('');
 const peso = (n) => `\u20B1${Number(n || 0).toLocaleString('en-PH')}`;
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' }) : '—');
+const fmtDateTime = (d) => (d ? new Date(d).toLocaleString('en-PH', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—');
 const statusText = (s) => (s === 'PAID' ? 'Paid' : s === 'PARTIAL' ? 'Partially Paid' : 'Not Paid');
 const prettyLevel = (g) => (g || '').replace('_', ' ');
 const totalBalance = computed(() => (data.value?.items || []).reduce((s, i) => s + (i.balance || 0), 0));
@@ -42,7 +43,7 @@ const doPrint = () => window.print();
         <div class="text-right">
           <p class="text-lg font-bold">OFFICIAL RECEIPT</p>
           <p class="tabular-nums">No.: <b>{{ data.payment.receiptNo || '—' }}</b></p>
-          <p>Date: {{ fmtDate(data.payment.paymentDate) }}</p>
+          <p>Date: {{ fmtDateTime(data.payment.paymentDate) }}</p>
           <p v-if="data.payment.status === 'REVERSED'" class="mt-1 font-bold text-[#b91c1c]">** REVERSED / VOID **</p>
         </div>
       </div>
@@ -67,7 +68,7 @@ const doPrint = () => window.print();
       </table>
 
       <!-- Full ledger -->
-      <p class="mt-5 font-bold text-[#5b21b6]">Student Ledger (Current Status)</p>
+      <p class="mt-5 font-bold text-[#5b21b6]">Student Ledger (as of {{ fmtDateTime(data.payment.paymentDate) }})</p>
       <table class="mt-1 w-full border-collapse text-left">
         <thead><tr class="border-b border-slate-300"><th class="py-1">Fees</th><th class="py-1">Status</th><th class="py-1 text-right">Paid</th><th class="py-1 text-right">Balance</th><th class="py-1">Remarks</th></tr></thead>
         <tbody>
