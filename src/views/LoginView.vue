@@ -71,7 +71,7 @@ const terms = [
             <img v-if="logoOk" :src="'/logo.png'" alt="Logo" class="mb-3 h-20 w-20 rounded-2xl object-contain" @error="logoOk = false" />
             <div v-else class="mb-3 flex h-20 w-20 items-center justify-center rounded-2xl bg-white/20 text-3xl font-bold text-white">U</div>
             <h1 class="text-3xl font-bold text-white">Log in</h1>
-            <p class="text-white/70">UBAFAI Portal</p>
+            <p class="text-white/70">UBAFAI Enrollment Management System</p>
           </div>
 
           <div class="space-y-4">

@@ -1,8 +1,14 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import http from '@/api/http';
 
 const guardians = ref([]); const loading = ref(false); const error = ref('');
+const search = ref('');
+const filtered = computed(() => {
+  const q = search.value.trim().toLowerCase();
+  const list = q ? guardians.value.filter((g) => (g.name || '').toLowerCase().includes(q) || (g.mobile || '').includes(q)) : guardians.value;
+  return [...list].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'en', { sensitivity: 'base' }));
+});
 const creds = ref(null); const busyId = ref('');
 
 async function load() {
@@ -29,7 +35,8 @@ async function toggle(g) {
 
 <template>
   <div class="text-[#241b33]">
-    <p class="mb-6 text-lg text-slate-600">Manage parent logins.</p>
+    <p class="mb-4 text-lg text-slate-600">Manage parent logins.</p>
+    <input v-model="search" placeholder="Search by name or mobile…" class="mb-4 w-full max-w-md rounded-xl border border-slate-300 p-3 text-lg" />
 
     <div v-if="creds" class="mb-4 rounded-xl border-2 border-[#4c1d95] bg-white px-5 py-4">
       <p class="font-bold text-[#4c1d95]">New password for {{ creds.name }} (shown only once):</p>
@@ -41,8 +48,9 @@ async function toggle(g) {
     <p v-if="loading" class="py-10 text-center text-xl text-slate-600">Loading&hellip;</p>
 
     <p v-else-if="!guardians.length" class="text-lg text-slate-600">No parents yet. Create parents in Enroll.</p>
+    <p v-if="guardians.length && !filtered.length" class="text-lg text-slate-500">No parents match your search.</p>
     <ul v-else class="space-y-3">
-      <li v-for="g in guardians" :key="g._id" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#e5e0f7] bg-white p-4">
+      <li v-for="g in filtered" :key="g._id" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#e5e0f7] bg-white p-4">
         <div>
           <p class="text-lg font-bold">{{ g.name }}
             <span class="ml-2 rounded px-2 py-0.5 text-sm font-semibold" :class="g.active ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#fee2e2] text-[#b91c1c]'">{{ g.active ? 'Active' : 'Disabled' }}</span>
