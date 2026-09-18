@@ -48,8 +48,8 @@ const ICONS = {
 const NAV = {
   admin: [
     { to: '/admin', label: 'Dashboard', icon: 'dashboard', perm: 'dashboard' },
-    { to: '/admin/verify', label: 'Payment Verification', icon: 'verify', perm: 'verify' },
-    { to: '/admin/cash', label: 'Record Cash Payment', icon: 'cash', perm: 'cash' },
+    { to: '/admin/verify', label: 'Online Payments', icon: 'verify', perm: 'verify' },
+    { to: '/admin/cash', label: 'Cash Payments', icon: 'cash', perm: 'cash' },
     { to: '/admin/applications', label: 'Enrollment Application', icon: 'enroll', perm: 'applications' },
     { to: '/admin/teachers', label: 'Teachers', icon: 'teachers', perm: 'teachers' },
     { to: '/admin/parents', label: 'Parents', icon: 'teachers', perm: 'parents' },
@@ -83,8 +83,8 @@ const isActive = (to) => route.path === to || (to !== '/admin' && route.path.sta
 
 const PAGES = {
   '/admin':            { title: 'Dashboard',                  icon: 'dashboard' },
-  '/admin/verify':     { title: 'Payment Verification',         icon: 'verify' },
-  '/admin/cash':       { title: 'Record Cash Payment',          icon: 'cash' },
+  '/admin/verify':     { title: 'Online Payments',         icon: 'verify' },
+  '/admin/cash':       { title: 'Cash Payments',          icon: 'cash' },
   '/admin/enroll':     { title: 'Enroll Student',   icon: 'enroll' },
   '/admin/teachers':   { title: 'Teachers',                   icon: 'teachers' },
   '/admin/parents':    { title: 'Parents',               icon: 'teachers' },
@@ -113,7 +113,7 @@ const currentPage = computed(() => {
         <div v-else class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-xl font-bold text-white">U</div>
         <div>
           <p class="text-lg font-bold leading-tight text-white">UBAFAI</p>
-          <p class="text-sm text-violet-200">Management System</p>
+          <p class="text-sm text-violet-200">Enrollment Management System</p>
         </div>
       </div>
       <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-2">
@@ -142,7 +142,7 @@ const currentPage = computed(() => {
           <div v-else class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#4c1d95] text-base font-bold text-white">U</div>
           <div class="leading-tight">
             <p class="font-bold text-[#4c1d95]">UBAFAI</p>
-            <p class="hidden text-xs text-slate-500 sm:block">Management System</p>
+            <p class="hidden text-xs text-slate-500 sm:block">Enrollment Management System</p>
           </div>
           <div class="ml-auto flex items-center gap-3 text-right">
             <div v-if="showYearPicker" class="hidden items-center gap-1 sm:flex">

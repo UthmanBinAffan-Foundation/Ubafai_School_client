@@ -74,7 +74,7 @@ async function toggleActive(r) {
         <input v-model="form.username" placeholder="Username" class="rounded-lg border border-slate-300 p-3 lowercase" />
         <input v-model="form.password" type="text" placeholder="Password" class="rounded-lg border border-slate-300 p-3" />
       </div>
-      <p class="mt-2 text-sm text-slate-500">By default, only Record Cash Payment, Enrollment Application, Masterlist, and Fees are enabled. You can change access below.</p>
+      <p class="mt-2 text-sm text-slate-500">By default, only Cash Payments, Enrollment Application, Masterlist, and Fees are enabled. You can change access below.</p>
       <button class="mt-3 rounded-xl bg-[#6d28d9] px-5 py-2.5 font-bold text-white hover:bg-[#5b21b6] disabled:opacity-60" :disabled="creating" @click="createRegistrar">{{ creating ? 'Creating…' : 'Create registrar' }}</button>
     </section>
 
