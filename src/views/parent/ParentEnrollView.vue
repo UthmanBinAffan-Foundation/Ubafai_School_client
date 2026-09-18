@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useToast } from '@/toast';
 import http from '@/api/http';
 
-const GRADE_LABEL = { NURSERY: 'Nursery', KINDER_1: 'Kinder 1', KINDER_2: 'Kinder 2', GRADE_1: 'Grade 1', GRADE_2: 'Grade 2', GRADE_3: 'Grade 3', GRADE_4: 'Grade 4', GRADE_5: 'Grade 5', GRADE_6: 'Grade 6' };
+const GRADE_LABEL = { NURSERY: 'Nursery', KINDER_1: 'Kinder 1', KINDER_2: 'Kinder 2', GRADE_1: 'Grade 1', GRADE_2: 'Grade 2', GRADE_3: 'Grade 3', GRADE_4: 'Grade 4', GRADE_5: 'Grade 5', GRADE_6: 'Grade 6', GRADE_7: 'Grade 7', GRADE_8: 'Grade 8', GRADE_9: 'Grade 9', GRADE_10: 'Grade 10', GRADE_11: 'Grade 11', GRADE_12: 'Grade 12' };
 const gLabel = (g) => GRADE_LABEL[g] || g;
 const peso = (n) => `\u20B1${Number(n || 0).toLocaleString('en-PH')}`;
 
@@ -29,6 +29,16 @@ onMounted(async () => {
 
 const feeForGrade = computed(() => info.value.applicationFeeByGrade[gradeLevel.value] || 0);
 const selectedChild = computed(() => info.value.children.find((c) => c._id === sourceStudentId.value));
+const ORDER = ['NURSERY', 'KINDER_1', 'KINDER_2', 'GRADE_1', 'GRADE_2', 'GRADE_3', 'GRADE_4', 'GRADE_5', 'GRADE_6', 'GRADE_7', 'GRADE_8', 'GRADE_9', 'GRADE_10', 'GRADE_11', 'GRADE_12'];
+const gradeOptions = computed(() => {
+  if (mode.value === 'returning' && selectedChild.value) {
+    const i = ORDER.indexOf(selectedChild.value.gradeLevel);
+    const allowed = i >= 0 ? [ORDER[i], ORDER[i + 1]].filter(Boolean) : ORDER;
+    return info.value.grades.filter((g) => allowed.includes(g));
+  }
+  return info.value.grades;
+});
+watch([mode, sourceStudentId], () => { if (!gradeOptions.value.includes(gradeLevel.value)) gradeLevel.value = ''; });
 
 async function submitApplication() {
   error.value = '';
@@ -104,10 +114,11 @@ async function submitFee() {
       </template>
 
       <!-- Grade to enroll in -->
+      <p v-if="mode === 'returning' && selectedChild" class="text-sm text-slate-500">A returning student can only repeat their current grade or move up one level.</p>
       <label class="block"><span class="text-lg font-semibold">Grade to enroll in</span>
         <select v-model="gradeLevel" class="mt-1 w-full rounded-lg border border-slate-300 p-3 text-lg">
           <option value="" disabled>Select grade…</option>
-          <option v-for="g in info.grades" :key="g" :value="g">{{ gLabel(g) }}</option>
+          <option v-for="g in gradeOptions" :key="g" :value="g">{{ gLabel(g) }}</option>
         </select>
       </label>
       <p v-if="gradeLevel" class="rounded-lg bg-[#f5f3ff] px-4 py-2 text-[#4c1d95]">Application fee: <b>{{ peso(feeForGrade) }}</b></p>

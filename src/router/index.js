@@ -18,6 +18,8 @@ const routes = [
   { path: '/admin/masterlist', component: () => import('@/views/admin/MasterlistView.vue'), meta: admin },
   { path: '/admin/settings', component: () => import('@/views/admin/SettingsView.vue'), meta: admin },
   { path: '/admin/registrars', component: () => import('@/views/admin/RegistrarsView.vue'), meta: admin },
+  { path: '/admin/admins', component: () => import('@/views/admin/AdminsView.vue'), meta: { roles: ['SUPERADMIN'] } },
+  { path: '/account', component: () => import('@/views/ChangePasswordView.vue') },
   { path: '/fees', component: () => import('@/views/FeesView.vue'), meta: { roles: ['ADMIN', 'SUPERADMIN', 'GUARDIAN', 'TEACHER'] } },
   { path: '/admin/student/:id', component: () => import('@/views/admin/StudentLedgerView.vue'), meta: admin },
   { path: '/admin/receipt/:id', component: () => import('@/views/admin/ReceiptView.vue'), meta: admin },
@@ -39,6 +41,7 @@ router.beforeEach((to) => {
   if (to.path === '/login' && auth.isAuthed) return home();
   if (to.meta.public) return true;
   if (!auth.isAuthed) return '/login';
+  if (to.path === '/account') return true; // lahat ng naka-login
   if (auth.role === 'REGISTRAR') {
     const perm = permForPath(to.path);
     if (perm && auth.permissions.includes(perm)) return true;
