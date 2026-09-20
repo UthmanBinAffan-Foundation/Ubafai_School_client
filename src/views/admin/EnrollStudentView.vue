@@ -13,7 +13,7 @@ const guardianMode = ref('existing'); // 'existing' | 'new'
 const selectedGuardian = ref('');
 const newGuardian = ref({ name: '', mobile: '' });
 
-const student = ref({ surname: '', givenName: '', middleName: '', lrn: '', birthdate: '', gender: '', gradeLevel: '' });
+const student = ref({ surname: '', givenName: '', middleName: '', lrn: '', birthdate: '', gender: '', gradeLevel: '', section: '' });
 
 const saving = ref(false);
 const error = ref('');
@@ -52,7 +52,7 @@ async function submit() {
 
     okName.value = `${student.value.surname}, ${student.value.givenName}`;
     // linisin ang student fields pero panatilihin ang magulang (para sa kapatid)
-    student.value = { surname: '', givenName: '', middleName: '', lrn: '', birthdate: '', gender: '', gradeLevel: '' };
+    student.value = { surname: '', givenName: '', middleName: '', lrn: '', birthdate: '', gender: '', gradeLevel: '', section: '' };
   } catch (e) {
     error.value = e?.response?.data?.message || 'Enrollment failed. Please try again.';
   } finally {
@@ -98,6 +98,8 @@ async function submit() {
               <option value="" disabled>Select&hellip;</option>
               <option v-for="[val, lbl] in GRADE_LEVELS" :key="val" :value="val">{{ lbl }}</option>
             </select></label>
+          <label class="block"><span class="font-semibold">Section <span class="font-normal text-slate-500">(optional, e.g. A)</span></span>
+            <input v-model="student.section" maxlength="2" placeholder="e.g. A" class="mt-1 w-full rounded-lg border border-slate-300 p-3 text-lg uppercase" /></label>
           <label class="block"><span class="font-semibold">Gender</span>
             <select v-model="student.gender" class="mt-1 w-full rounded-lg border border-slate-300 p-3 text-lg">
               <option value="">— unspecified —</option>

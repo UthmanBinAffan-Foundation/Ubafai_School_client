@@ -13,7 +13,7 @@ async function viewAs(t) { try { await auth.impersonate('teacher', t._id); route
 
 const teachers = ref([]);
 const name = ref('');
-const assignments = ref([{ gradeLevel: '', subjectsText: '' }]);
+const assignments = ref([{ gradeLevel: '', section: '', subjectsText: '' }]);
 const saving = ref(false); const busyId = ref('');
 const error = ref(''); const creds = ref(null);
 const editId = ref(''); const editForm = ref({ name: '', assignments: [] });
@@ -21,9 +21,9 @@ const editId = ref(''); const editForm = ref({ name: '', assignments: [] });
 async function loadTeachers() { try { teachers.value = (await http.get('/teacher')).data; } catch { /* ok */ } }
 onMounted(loadTeachers);
 
-const addRow = () => assignments.value.push({ gradeLevel: '', subjectsText: '' });
+const addRow = () => assignments.value.push({ gradeLevel: '', section: '', subjectsText: '' });
 const removeRow = (i) => assignments.value.splice(i, 1);
-const toAssignments = (rows) => rows.filter((a) => a.gradeLevel).map((a) => ({ gradeLevel: a.gradeLevel, subjects: a.subjectsText.split(',').map((s) => s.trim()).filter(Boolean) }));
+const toAssignments = (rows) => rows.filter((a) => a.gradeLevel).map((a) => ({ gradeLevel: a.gradeLevel, section: (a.section || '').trim().toUpperCase().slice(0, 2), subjects: a.subjectsText.split(',').map((s) => s.trim()).filter(Boolean) }));
 
 async function submit() {
   error.value = '';
@@ -31,17 +31,17 @@ async function submit() {
   saving.value = true;
   try {
     creds.value = { name: name.value, ...(await http.post('/teacher', { name: name.value, assignments: toAssignments(assignments.value) })).data.credentials };
-    name.value = ''; assignments.value = [{ gradeLevel: '', subjectsText: '' }];
+    name.value = ''; assignments.value = [{ gradeLevel: '', section: '', subjectsText: '' }];
     await loadTeachers();
   } catch (e) { error.value = e?.response?.data?.message || 'Could not save.'; }
   finally { saving.value = false; }
 }
 function startEdit(t) {
   editId.value = t._id;
-  editForm.value = { name: t.name, assignments: (t.assignments || []).map((a) => ({ gradeLevel: a.gradeLevel, subjectsText: (a.subjects || []).join(', ') })) };
-  if (!editForm.value.assignments.length) editForm.value.assignments = [{ gradeLevel: '', subjectsText: '' }];
+  editForm.value = { name: t.name, assignments: (t.assignments || []).map((a) => ({ gradeLevel: a.gradeLevel, section: a.section || '', subjectsText: (a.subjects || []).join(', ') })) };
+  if (!editForm.value.assignments.length) editForm.value.assignments = [{ gradeLevel: '', section: '', subjectsText: '' }];
 }
-const editAddRow = () => editForm.value.assignments.push({ gradeLevel: '', subjectsText: '' });
+const editAddRow = () => editForm.value.assignments.push({ gradeLevel: '', section: '', subjectsText: '' });
 const editRemoveRow = (i) => editForm.value.assignments.splice(i, 1);
 async function saveEdit(id) {
   busyId.value = id;
@@ -75,6 +75,7 @@ async function toggle(t) { busyId.value = t._id; try { t.active = (await http.po
         <span class="font-semibold">Assignments (grade + subjects)</span>
         <div v-for="(a, i) in assignments" :key="i" class="mt-2 flex flex-col gap-2 sm:flex-row">
           <select v-model="a.gradeLevel" class="rounded-lg border border-slate-300 p-3 text-lg sm:w-44"><option value="">Grade…</option><option v-for="[v, l] in GRADE_LEVELS" :key="v" :value="v">{{ l }}</option></select>
+          <input v-model="a.section" maxlength="2" placeholder="Sec" class="rounded-lg border border-slate-300 p-3 text-lg uppercase sm:w-20" />
           <input v-model="a.subjectsText" placeholder="Math, English, Science" class="flex-1 rounded-lg border border-slate-300 p-3 text-lg" />
           <button v-if="assignments.length > 1" class="rounded-lg border-2 border-slate-300 px-3 text-lg text-slate-600" @click="removeRow(i)">Remove</button>
         </div>
@@ -94,7 +95,7 @@ async function toggle(t) { busyId.value = t._id; try { t.active = (await http.po
                 <span class="ml-2 rounded px-2 py-0.5 text-sm font-semibold" :class="t.active ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#fee2e2] text-[#b91c1c]'">{{ t.active ? 'Active' : 'Disabled' }}</span>
               </p>
               <p class="text-slate-600">Username: <b class="tabular-nums">{{ t.username }}</b></p>
-              <p v-if="t.assignments?.length" class="mt-1 text-slate-600"><span v-for="(a, i) in t.assignments" :key="i">{{ labelOf(a.gradeLevel) }}<template v-if="a.subjects?.length"> ({{ a.subjects.join(', ') }})</template><template v-if="i < t.assignments.length - 1">; </template></span></p>
+              <p v-if="t.assignments?.length" class="mt-1 text-slate-600"><span v-for="(a, i) in t.assignments" :key="i">{{ labelOf(a.gradeLevel) }}{{ a.section }}<template v-if="a.subjects?.length"> ({{ a.subjects.join(', ') }})</template><template v-if="i < t.assignments.length - 1">; </template></span></p>
               <p v-else class="mt-1 text-slate-400">No assignments set</p>
             </div>
           </div>
@@ -111,6 +112,7 @@ async function toggle(t) { busyId.value = t._id; try { t.active = (await http.po
           <input v-model="editForm.name" class="w-full rounded-lg border border-slate-300 p-3 text-lg" />
           <div v-for="(a, i) in editForm.assignments" :key="i" class="flex flex-col gap-2 sm:flex-row">
             <select v-model="a.gradeLevel" class="rounded-lg border border-slate-300 p-2 sm:w-44"><option value="">Grade…</option><option v-for="[v, l] in GRADE_LEVELS" :key="v" :value="v">{{ l }}</option></select>
+            <input v-model="a.section" maxlength="2" placeholder="Sec" class="rounded-lg border border-slate-300 p-2 uppercase sm:w-16" />
             <input v-model="a.subjectsText" placeholder="Math, English" class="flex-1 rounded-lg border border-slate-300 p-2" />
             <button v-if="editForm.assignments.length > 1" class="rounded-lg border-2 border-slate-300 px-3 text-slate-600" @click="editRemoveRow(i)">Remove</button>
           </div>

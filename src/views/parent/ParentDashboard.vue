@@ -79,7 +79,7 @@ onMounted(async () => { await load(); if (await isPushSubscribed()) pushState.va
         <div class="p-5 sm:p-6">
           <div class="flex flex-wrap items-baseline justify-between gap-x-4">
             <h2 class="text-2xl font-bold">{{ c.student.surname }}, {{ c.student.givenName }}</h2>
-            <span class="text-lg text-slate-500">{{ prettyLevel(c.student.gradeLevel) }}</span>
+            <span class="text-lg text-slate-500">{{ prettyLevel(c.student.gradeLevel) }}{{ c.student.section }}</span>
           </div>
           <router-link :to="'/portal/student/' + c.student._id + '/edit'" class="mt-1 inline-block text-sm font-semibold text-[#4c1d95] underline">Update student info</router-link>
           <div v-if="!c.student.lrn" class="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-[#fef9e7] p-2">

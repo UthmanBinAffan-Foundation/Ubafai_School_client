@@ -8,6 +8,7 @@ const router = useRouter();
 const sy = useSchoolYearStore();
 const rows = ref([]); const loading = ref(false); const error = ref('');
 const q = ref(''); const grade = ref('');
+const sectionFilter = ref('');
 
 const GRADES = [['', 'All grades'], ['NURSERY', 'Nursery'], ['KINDER_1', 'Kinder 1'], ['KINDER_2', 'Kinder 2'],
   ['GRADE_1', 'Grade 1'], ['GRADE_2', 'Grade 2'], ['GRADE_3', 'Grade 3'], ['GRADE_4', 'Grade 4'], ['GRADE_5', 'Grade 5'], ['GRADE_6', 'Grade 6']];
@@ -25,9 +26,10 @@ watch(() => sy.selected, load);
 
 const filtered = computed(() => rows.value.filter((s) => {
   const okG = !grade.value || s.gradeLevel === grade.value;
+  const okS = !sectionFilter.value || (s.section || '').toUpperCase() === sectionFilter.value.trim().toUpperCase();
   const term = q.value.trim().toLowerCase();
   const okQ = !term || `${s.surname} ${s.givenName} ${s.lrn || ''}`.toLowerCase().includes(term);
-  return okG && okQ;
+  return okG && okS && okQ;
 }));
 const openStudent = (id) => router.push(`/admin/student/${id}`);
 </script>
@@ -39,6 +41,7 @@ const openStudent = (id) => router.push(`/admin/student/${id}`);
       <select v-model="grade" class="rounded-lg border border-slate-300 p-3 text-lg sm:w-52">
         <option v-for="[val, lbl] in GRADES" :key="val" :value="val">{{ lbl }}</option>
       </select>
+      <input v-model="sectionFilter" maxlength="2" placeholder="Section" class="rounded-lg border border-slate-300 p-3 text-lg uppercase sm:w-28" />
     </div>
 
     <p v-if="error" class="mb-4 rounded-xl bg-[#fee2e2] px-5 py-4 text-lg font-semibold text-[#b91c1c]">{{ error }}</p>
@@ -57,7 +60,7 @@ const openStudent = (id) => router.push(`/admin/student/${id}`);
           <tr v-for="s in filtered" :key="s._id" class="cursor-pointer border-t border-[#f1eefb] hover:bg-[#f5f3ff]" @click="openStudent(s._id)">
             <td class="p-4 text-lg font-semibold">{{ s.surname }}, {{ s.givenName }}
               <span class="ml-1 rounded px-1.5 py-0.5 text-xs font-semibold" :class="s.returning ? 'bg-[#dbeafe] text-[#1e40af]' : 'bg-[#dcfce7] text-[#15803d]'">{{ s.returning ? 'Returning' : 'New' }}</span></td>
-            <td class="p-4 text-lg">{{ prettyLevel(s.gradeLevel) }}</td>
+            <td class="p-4 text-lg">{{ prettyLevel(s.gradeLevel) }}{{ s.section }}</td>
             <td class="hidden p-4 tabular-nums text-slate-600 sm:table-cell">{{ s.lrn || '\u2014' }}</td>
             <td class="p-4 text-right text-lg font-bold">
               <span v-if="(s.totals?.balance ?? 0) > 0" class="text-[#b91c1c]">{{ peso(s.totals.balance) }}</span>

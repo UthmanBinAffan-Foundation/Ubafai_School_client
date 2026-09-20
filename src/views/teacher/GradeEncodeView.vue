@@ -5,30 +5,38 @@ import { enablePush, isPushSubscribed } from '@/push';
 
 const assignments = ref([]);
 const teacherName = ref('');
-const gradeLevel = ref('');
+const selected = ref(null); // {gradeLevel, section, label}
 const sheet = ref({ subjects: [], terms: [], students: [] });
 const loading = ref(false); const error = ref(''); const msg = ref('');
 const editId = ref(''); const editGrades = ref({}); const saving = ref(false);
 const notifOn = ref(false);
 async function turnOnNotifs() { try { await enablePush(); notifOn.value = true; } catch (e) { error.value = e?.message || 'Could not turn on notifications.'; } }
 
-const GRADE_LABEL = { NURSERY: 'Nursery', KINDER_1: 'Kinder 1', KINDER_2: 'Kinder 2', GRADE_1: 'Grade 1', GRADE_2: 'Grade 2', GRADE_3: 'Grade 3', GRADE_4: 'Grade 4', GRADE_5: 'Grade 5', GRADE_6: 'Grade 6' };
+const GRADE_LABEL = { NURSERY: 'Nursery', KINDER_1: 'Kinder 1', KINDER_2: 'Kinder 2', GRADE_1: 'Grade 1', GRADE_2: 'Grade 2', GRADE_3: 'Grade 3', GRADE_4: 'Grade 4', GRADE_5: 'Grade 5', GRADE_6: 'Grade 6', GRADE_7: 'Grade 7', GRADE_8: 'Grade 8', GRADE_9: 'Grade 9', GRADE_10: 'Grade 10', GRADE_11: 'Grade 11', GRADE_12: 'Grade 12' };
 const gLabel = (g) => GRADE_LABEL[g] || g;
-const myGrades = computed(() => [...new Set(assignments.value.map((a) => a.gradeLevel))]);
+const options = computed(() => {
+  const seen = new Set(); const out = [];
+  for (const a of assignments.value) {
+    const key = `${a.gradeLevel}|${a.section || ''}`;
+    if (seen.has(key)) continue; seen.add(key);
+    out.push({ gradeLevel: a.gradeLevel, section: a.section || '', label: gLabel(a.gradeLevel) + (a.section || '') });
+  }
+  return out;
+});
 
 async function loadBootstrap() {
   try {
     const { data } = await http.get('/teacher/bootstrap');
     assignments.value = data.profile.assignments; teacherName.value = data.profile.name;
-    if (myGrades.value.length) { gradeLevel.value = myGrades.value[0]; await loadSheet(); }
+    if (options.value.length) { selected.value = options.value[0]; await loadSheet(); }
   } catch (e) { error.value = e?.response?.data?.message || 'Could not load.'; }
 }
 onMounted(async () => { await loadBootstrap(); notifOn.value = await isPushSubscribed(); });
 
 async function loadSheet() {
-  if (!gradeLevel.value) return;
+  if (!selected.value) return;
   loading.value = true; editId.value = '';
-  try { sheet.value = (await http.get(`/teacher/gradesheet?gradeLevel=${gradeLevel.value}`)).data; }
+  try { sheet.value = (await http.get(`/teacher/gradesheet?gradeLevel=${selected.value.gradeLevel}&section=${encodeURIComponent(selected.value.section)}`)).data; }
   catch { error.value = 'Could not load grades.'; }
   finally { loading.value = false; }
 }
@@ -41,12 +49,12 @@ function startEdit(row) {
 }
 async function saveRow(row) {
   saving.value = true; msg.value = ''; error.value = '';
-  try { await http.post('/teacher/gradesheet', { student: row._id, gradeLevel: gradeLevel.value, grades: editGrades.value }); editId.value = ''; msg.value = 'Grades saved.'; await loadSheet(); }
+  try { await http.post('/teacher/gradesheet', { student: row._id, gradeLevel: selected.value.gradeLevel, section: selected.value.section, grades: editGrades.value }); editId.value = ''; msg.value = 'Grades saved.'; await loadSheet(); }
   catch { error.value = 'Could not save.'; } finally { saving.value = false; }
 }
 async function delRow(row) {
   if (!confirm(`Clear your subjects' grades for ${row.name}?`)) return;
-  try { await http.delete(`/teacher/gradesheet?student=${row._id}&gradeLevel=${gradeLevel.value}`); await loadSheet(); }
+  try { await http.delete(`/teacher/gradesheet?student=${row._id}&gradeLevel=${selected.value.gradeLevel}&section=${encodeURIComponent(selected.value.section)}`); await loadSheet(); }
   catch { error.value = 'Could not delete.'; }
 }
 </script>
@@ -67,14 +75,14 @@ async function delRow(row) {
     <p v-if="msg" class="mb-3 rounded-xl bg-[#dcfce7] px-5 py-3 font-semibold text-[#15803d]">{{ msg }}</p>
     <p v-if="error" class="mb-3 rounded-xl bg-[#fee2e2] px-5 py-3 font-semibold text-[#b91c1c]">{{ error }}</p>
 
-    <label class="mb-4 block max-w-xs"><span class="font-semibold">Grade level</span>
-      <select v-model="gradeLevel" class="mt-1 w-full rounded-lg border border-slate-300 p-3 text-lg" @change="loadSheet">
-        <option v-for="g in myGrades" :key="g" :value="g">{{ gLabel(g) }}</option>
+    <label class="mb-4 block max-w-xs"><span class="font-semibold">Class</span>
+      <select v-model="selected" class="mt-1 w-full rounded-lg border border-slate-300 p-3 text-lg" @change="loadSheet">
+        <option v-for="o in options" :key="o.gradeLevel + '|' + o.section" :value="o">{{ o.label }}</option>
       </select>
     </label>
 
     <p v-if="loading" class="py-8 text-center text-slate-600">Loading…</p>
-    <p v-else-if="!sheet.students.length" class="rounded-2xl border-2 border-dashed border-[#c4b5fd] bg-white py-12 text-center text-[#5b21b6]">No students in this grade.</p>
+    <p v-else-if="!sheet.students.length" class="rounded-2xl border-2 border-dashed border-[#c4b5fd] bg-white py-12 text-center text-[#5b21b6]">No students in this class.</p>
 
     <div v-else class="overflow-x-auto rounded-2xl border border-[#e5e0f7] bg-white">
       <table class="w-full text-left text-sm">

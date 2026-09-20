@@ -40,7 +40,7 @@ async function load() {
     payments.value = (led.data.payments || []).slice().sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate));
     returning.value = !!led.data.returning;
     items.value = it.data.items;
-    form.value = { surname: student.value.surname, givenName: student.value.givenName, middleName: student.value.middleName || '', lrn: student.value.lrn || '', gradeLevel: student.value.gradeLevel, gender: student.value.gender || '', status: student.value.status };
+    form.value = { surname: student.value.surname, givenName: student.value.givenName, middleName: student.value.middleName || '', lrn: student.value.lrn || '', gradeLevel: student.value.gradeLevel, section: student.value.section || '', gender: student.value.gender || '', status: student.value.status };
     disc.value = {}; (assessment.value?.lines || []).forEach((l) => { disc.value[l._id] = l.discount || 0; });
   } catch { error.value = 'Could not load the ledger.'; }
   finally { loading.value = false; }
@@ -77,7 +77,7 @@ async function saveDiscounts() {
           <div>
             <p class="text-2xl font-bold">{{ student.surname }}, {{ student.givenName }} {{ student.middleName }}
               <span class="ml-2 rounded px-2 py-0.5 text-sm font-semibold align-middle" :class="returning ? 'bg-[#dbeafe] text-[#1e40af]' : 'bg-[#dcfce7] text-[#15803d]'">{{ returning ? 'Returning student' : 'New student' }}</span></p>
-            <p class="text-slate-600">{{ prettyLevel(student.gradeLevel) }} &middot; LRN: {{ student.lrn || '—' }}
+            <p class="text-slate-600">{{ prettyLevel(student.gradeLevel) }}{{ student.section }} &middot; LRN: {{ student.lrn || '—' }}
               <span class="ml-2 rounded px-2 py-0.5 text-sm font-semibold" :class="student.status === 'ACTIVE' ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#fee2e2] text-[#b91c1c]'">{{ student.status }}</span>
             </p>
             <p v-if="student.guardians?.length" class="mt-1 text-slate-600">Parent: {{ student.guardians.map(g => g.name).join(', ') }}</p>
@@ -94,6 +94,7 @@ async function saveDiscounts() {
             <input v-model="form.middleName" placeholder="Middle name" class="rounded-lg border border-slate-300 p-3" />
             <input v-model="form.lrn" placeholder="LRN" class="rounded-lg border border-slate-300 p-3 tabular-nums" />
             <select v-model="form.gradeLevel" class="rounded-lg border border-slate-300 p-3"><option v-for="[v, l] in GRADE_LEVELS" :key="v" :value="v">{{ l }}</option></select>
+            <input v-model="form.section" maxlength="2" placeholder="Section (e.g. A)" class="rounded-lg border border-slate-300 p-3 uppercase" />
             <select v-model="form.gender" class="rounded-lg border border-slate-300 p-3"><option value="">— gender —</option><option value="MALE">Male</option><option value="FEMALE">Female</option></select>
           </div>
           <div class="flex gap-2">
