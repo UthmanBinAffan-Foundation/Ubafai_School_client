@@ -18,6 +18,7 @@ const isOpen = ref(false);
 const open = () => { isOpen.value = true; };
 const close = () => { isOpen.value = false; };
 const logout = () => { close(); auth.logout(); router.push('/login'); };
+const stopImpersonating = () => { close(); auth.stopImpersonating(); router.push('/admin'); };
 watch(() => route.path, () => close());
 
 const now = ref(new Date());
@@ -168,6 +169,11 @@ const currentPage = computed(() => {
           <h1 class="text-xl font-bold text-[#5b21b6]">{{ currentPage.title }}</h1>
         </div>
       </header>
+
+      <div v-if="auth.impersonating" class="bg-[#4c1d95] px-4 py-2 text-center text-sm text-white">
+        Viewing <b>{{ auth.user?.username }}</b>'s account for troubleshooting.
+        <button class="ml-2 rounded bg-white px-2 py-0.5 font-semibold text-[#4c1d95]" @click="stopImpersonating">Return to my account</button>
+      </div>
 
       <div v-if="isAdmin() && syStore.isViewingPast" class="bg-[#fef3c7] px-4 py-2 text-center text-sm text-[#7c5b0a]">
         Viewing a previous school year (<b>{{ syStore.selectedLabel }}</b>). New enrollments and payments still go to the current year (<b>{{ syStore.activeLabel }}</b>).

@@ -90,32 +90,30 @@ onMounted(async () => { await load(); if (await isPushSubscribed()) pushState.va
           <p v-else class="mt-1 text-sm text-slate-400">LRN: {{ c.student.lrn }}</p>
 
           <div class="mt-3 rounded-xl bg-[#f5f3ff] p-5">
-            <p class="text-base font-semibold text-[#5b21b6]">Remaining balance</p>
+            <p class="text-base font-semibold text-[#5b21b6]">Balance for {{ c.currentTerm.label }}</p>
             <p class="mt-1 text-4xl font-bold tabular-nums sm:text-5xl"
-               :class="(c.totals?.balance ?? 0) > 0 ? 'text-[#b91c1c]' : 'text-[#15803d]'">
-              {{ (c.totals?.balance ?? 0) > 0 ? peso(c.totals.balance) : 'Fully paid' }}
+               :class="c.totalBalance > 0 ? 'text-[#b91c1c]' : 'text-[#15803d]'">
+              {{ c.totalBalance > 0 ? peso(c.totalBalance) : 'Fully paid' }}
             </p>
-            <p v-if="c.totals" class="mt-1 text-lg text-slate-600">
-              Fees: {{ peso(c.totals.due) }} &middot; Paid: {{ peso(c.totals.paid) }}
-            </p>
+            <p class="mt-1 text-sm text-slate-500">General Fees + {{ c.currentTerm.label }} (hindi kasama ang optional books)</p>
           </div>
 
           <ul class="mt-4 space-y-2">
-            <li v-for="p in c.periods" :key="p.code" class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#efeafc] px-4 py-3">
+            <li v-for="it in c.items" :key="it.key" class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#efeafc] px-4 py-3">
               <div>
-                <span class="text-lg font-semibold">{{ p.label }}</span>
-                <span class="ml-2 tabular-nums" :class="p.balance > 0 ? 'text-[#b91c1c]' : 'text-[#15803d]'">
-                  {{ p.balance > 0 ? peso(p.balance) + ' short' : 'paid' }}
-                </span>
+                <span class="text-lg font-semibold">{{ it.label }}</span>
+                <span v-if="it.remarks" class="ml-2 text-sm text-slate-400">{{ it.remarks }}</span>
               </div>
-              <span v-if="p.gatesGrades" class="rounded-lg px-3 py-1 text-base font-semibold"
-                    :class="p.unlocked ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#fee2e2] text-[#b91c1c]'">
-                {{ p.unlocked ? 'Grades: open' : 'Grades: locked' }}
+              <span class="tabular-nums" :class="it.balance > 0 ? 'text-[#b91c1c]' : 'text-[#15803d]'">
+                {{ it.balance > 0 ? peso(it.balance) : 'paid' }}
               </span>
             </li>
-            <li v-if="c.others?.balance > 0" class="flex items-center justify-between rounded-lg border border-[#efeafc] px-4 py-3">
-              <span class="text-lg font-semibold">Other fees (books, uniform, etc.)</span>
-              <span class="tabular-nums text-[#b91c1c]">{{ peso(c.others.balance) }} short</span>
+          </ul>
+
+          <ul v-if="c.periods.some(p => p.gatesGrades)" class="mt-3 space-y-2">
+            <li v-for="p in c.periods" v-show="p.gatesGrades" :key="p.code" class="flex items-center justify-between rounded-lg border border-[#efeafc] px-4 py-2">
+              <span class="font-semibold">{{ p.label }} grades</span>
+              <span class="rounded-lg px-3 py-1 text-sm font-semibold" :class="p.unlocked ? 'bg-[#dcfce7] text-[#15803d]' : 'bg-[#fee2e2] text-[#b91c1c]'">{{ p.unlocked ? 'open' : 'locked' }}</span>
             </li>
           </ul>
 

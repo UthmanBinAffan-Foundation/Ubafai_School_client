@@ -1,9 +1,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import http from '@/api/http';
+import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
+import { useToast } from '@/toast';
 
 const guardians = ref([]); const loading = ref(false); const error = ref('');
 const search = ref('');
+const auth = useAuthStore(); const router = useRouter(); const toast = useToast();
+const isSuper = computed(() => auth.role === 'SUPERADMIN');
+async function viewAs(g) { try { await auth.impersonate('guardian', g._id); router.push('/portal'); } catch { toast.error('Could not open account.'); } }
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase();
   const list = q ? guardians.value.filter((g) => (g.name || '').toLowerCase().includes(q) || (g.mobile || '').includes(q)) : guardians.value;
@@ -57,7 +63,8 @@ async function toggle(g) {
           </p>
           <p class="text-slate-600">{{ g.mobile || '\u2014' }}</p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
+          <button v-if="isSuper" class="rounded-lg border-2 border-[#0f5132] px-3 py-2 font-semibold text-[#0f5132] hover:bg-[#ecfdf5]" @click="viewAs(g)">View as</button>
           <button class="rounded-lg border-2 border-[#4c1d95] px-3 py-2 font-semibold text-[#4c1d95] hover:bg-[#f5f3ff] disabled:opacity-50" :disabled="busyId === g._id" @click="reset(g)">Reset password</button>
           <button class="rounded-lg border-2 px-3 py-2 font-semibold disabled:opacity-50" :class="g.active ? 'border-[#b91c1c] text-[#b91c1c]' : 'border-[#15803d] text-[#15803d]'" :disabled="busyId === g._id" @click="toggle(g)">{{ g.active ? 'Deactivate' : 'Activate' }}</button>
         </div>

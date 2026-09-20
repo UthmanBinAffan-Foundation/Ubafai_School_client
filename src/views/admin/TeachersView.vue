@@ -1,9 +1,15 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+import { useRouter } from 'vue-router';
+import { useToast } from '@/toast';
 import http from '@/api/http';
 
 const GRADE_LEVELS = [['NURSERY', 'Nursery'], ['KINDER_1', 'Kinder 1'], ['KINDER_2', 'Kinder 2'], ['GRADE_1', 'Grade 1'], ['GRADE_2', 'Grade 2'], ['GRADE_3', 'Grade 3'], ['GRADE_4', 'Grade 4'], ['GRADE_5', 'Grade 5'], ['GRADE_6', 'Grade 6']];
 const labelOf = (v) => (GRADE_LEVELS.find(([val]) => val === v)?.[1]) || v;
+const auth = useAuthStore(); const router = useRouter(); const toast = useToast();
+const isSuper = computed(() => auth.role === 'SUPERADMIN');
+async function viewAs(t) { try { await auth.impersonate('teacher', t._id); router.push('/teacher'); } catch { toast.error('Could not open account.'); } }
 
 const teachers = ref([]);
 const name = ref('');
@@ -93,6 +99,7 @@ async function toggle(t) { busyId.value = t._id; try { t.active = (await http.po
             </div>
           </div>
           <div class="mt-3 flex flex-wrap gap-2">
+            <button v-if="isSuper" class="rounded-lg border-2 border-[#0f5132] px-3 py-2 text-sm font-semibold text-[#0f5132] hover:bg-[#ecfdf5]" @click="viewAs(t)">View as</button>
             <button class="rounded-lg border-2 border-[#4c1d95] px-3 py-2 text-sm font-semibold text-[#4c1d95] hover:bg-[#f5f3ff]" @click="startEdit(t)">Edit</button>
             <button class="rounded-lg border-2 border-[#4c1d95] px-3 py-2 text-sm font-semibold text-[#4c1d95] hover:bg-[#f5f3ff]" :disabled="busyId === t._id" @click="reset(t)">Reset password</button>
             <button class="rounded-lg border-2 px-3 py-2 text-sm font-semibold" :class="t.active ? 'border-[#b45309] text-[#b45309]' : 'border-[#15803d] text-[#15803d]'" :disabled="busyId === t._id" @click="toggle(t)">{{ t.active ? 'Deactivate' : 'Activate' }}</button>
