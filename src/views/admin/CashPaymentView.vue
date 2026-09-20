@@ -9,6 +9,7 @@ const students = ref([]);
 const items = ref([]);
 const payments = ref([]);
 const selected = ref({});          // key -> bool
+const discInputs = ref({});        // key -> discount amount
 const amount = ref(null);
 const form = ref({ student: '', referenceNo: '', paymentDate: new Date().toISOString().slice(0, 10) });
 const loadingLedger = ref(false); const saving = ref(false);
@@ -29,7 +30,7 @@ onMounted(async () => {
 });
 
 async function loadLedger(id) {
-  items.value = []; payments.value = []; selected.value = {}; amount.value = null;
+  items.value = []; payments.value = []; selected.value = {}; amount.value = null; discInputs.value = {};
   if (!id) return;
   loadingLedger.value = true;
   try {
@@ -38,6 +39,7 @@ async function loadLedger(id) {
       http.get(`/students/${id}/ledger`),
     ]);
     items.value = it.data.items;
+    items.value.forEach((x) => { discInputs.value[x.key] = x.discount || 0; });
     payments.value = led.data.payments || [];
   } catch { /* ignore */ }
   finally { loadingLedger.value = false; }
@@ -50,6 +52,13 @@ async function reversePayment(p) {
   if (reason === null) return;
   try { await http.post(`/payments/${p._id}/reverse`, { reason }); done.value = 'Payment reversed. Balance restored.'; await loadLedger(form.value.student); }
   catch { error.value = 'Could not reverse.'; }
+}
+async function applyDiscount(it) {
+  try {
+    await http.patch(`/students/${form.value.student}/item-discount`, { key: it.key, discount: Number(discInputs.value[it.key]) || 0 });
+    toast.success(`Discount applied to ${it.label}.`);
+    await loadLedger(form.value.student);
+  } catch (e) { toast.error(e?.response?.data?.message || 'Could not apply discount.'); }
 }
 watch(() => form.value.student, (id) => loadLedger(id));
 
@@ -100,7 +109,7 @@ async function submit() {
         <div class="overflow-x-auto rounded-2xl border border-[#e5e0f7] bg-white">
           <table class="w-full min-w-[720px] text-left text-sm">
             <thead class="bg-[#f5f3ff] text-[#4c1d95]">
-              <tr><th class="p-2">Pay</th><th class="p-2">Fees</th><th class="p-2">Due date</th><th class="p-2">Status</th><th class="p-2 text-right">Paid</th><th class="p-2">Payment dates</th><th class="p-2 text-right">Balance</th><th class="p-2">Remarks</th></tr>
+              <tr><th class="p-2">Pay</th><th class="p-2">Fees</th><th class="p-2">Due date</th><th class="p-2">Status</th><th class="p-2 text-right">Discount</th><th class="p-2 text-right">Paid</th><th class="p-2">Payment dates</th><th class="p-2 text-right">Balance</th><th class="p-2">Remarks</th></tr>
             </thead>
             <tbody>
               <tr v-for="it in items" :key="it.key" class="border-t border-[#f1eefb]" :class="selected[it.key] ? 'bg-[#f5f3ff]' : ''">
@@ -111,6 +120,9 @@ async function submit() {
                 <td class="p-2 font-semibold">{{ it.label }}<span v-if="!it.payable && it.reason" class="block text-xs font-normal text-[#b91c1c]">{{ it.reason }}</span></td>
                 <td class="p-2 text-slate-600">{{ fmtDate(it.dueDate) }}</td>
                 <td class="p-2"><span class="rounded px-2 py-0.5 text-xs font-semibold" :class="statusClass(it.status)">{{ statusText(it.status) }}</span></td>
+                <td class="p-2 text-right">
+                  <input v-model.number="discInputs[it.key]" type="number" min="0" class="w-20 rounded border border-slate-300 p-1 text-right tabular-nums" @blur="applyDiscount(it)" @keyup.enter="applyDiscount(it)" />
+                </td>
                 <td class="p-2 text-right tabular-nums text-[#15803d]">{{ peso(it.amountPaid) }}</td>
                 <td class="p-2 text-slate-600">{{ fmtDates(it.paymentDates) }}</td>
                 <td class="p-2 text-right tabular-nums font-semibold" :class="it.balance > 0 ? 'text-[#b91c1c]' : 'text-[#15803d]'">{{ peso(it.balance) }}</td>
