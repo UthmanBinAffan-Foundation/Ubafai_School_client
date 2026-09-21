@@ -8,7 +8,7 @@ const student = ref(null);
 const returning = ref(false); const assessment = ref(null); const payments = ref([]); const items = ref([]);
 const loading = ref(false); const error = ref(''); const msg = ref('');
 const editing = ref(false); const form = ref({});
-const disc = ref({}); const showDisc = ref(false);
+const lineEdits = ref({}); const showDisc = ref(false);
 const savingDisc = ref(false); const savingStudent = ref(false);
 
 const peso = (n) => `\u20B1${Number(n || 0).toLocaleString('en-PH')}`;
@@ -41,7 +41,7 @@ async function load() {
     returning.value = !!led.data.returning;
     items.value = it.data.items;
     form.value = { surname: student.value.surname, givenName: student.value.givenName, middleName: student.value.middleName || '', lrn: student.value.lrn || '', gradeLevel: student.value.gradeLevel, section: student.value.section || '', gender: student.value.gender || '', status: student.value.status };
-    disc.value = {}; (assessment.value?.lines || []).forEach((l) => { disc.value[l._id] = l.discount || 0; });
+    lineEdits.value = {}; (assessment.value?.lines || []).forEach((l) => { lineEdits.value[l._id] = { amountDue: l.amountDue, unlocked: !!l.unlocked }; });
   } catch { error.value = 'Could not load the ledger.'; }
   finally { loading.value = false; }
 }
@@ -56,10 +56,11 @@ async function toggleStatus() {
   const next = student.value.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
   try { await http.patch(`/students/${route.params.id}`, { status: next }); await load(); } catch { error.value = 'Could not change status.'; }
 }
-async function saveDiscounts() {
+async function saveLedgerLines() {
   savingDisc.value = true; msg.value = ''; error.value = '';
-  try { await http.patch(`/students/${route.params.id}/discounts`, { discounts: disc.value }); msg.value = 'Discounts saved.'; await load(); }
-  catch { error.value = 'Could not save discounts.'; } finally { savingDisc.value = false; }
+  try { await http.patch(`/students/${route.params.id}/ledger-lines`, { lines: lineEdits.value }); msg.value = 'Ledger updated for this student.'; await load(); }
+  catch { error.value = 'Could not save changes.'; }
+  finally { savingDisc.value = false; }
 }
 </script>
 
@@ -150,22 +151,23 @@ async function saveDiscounts() {
         </ul>
       </section>
 
-      <!-- Discounts / scholarship (per raw line) -->
+      <!-- Edit fees for this student (amount + unlock) -->
       <section class="rounded-2xl border border-[#e5e0f7] bg-white p-5">
-        <button class="text-lg font-bold text-[#5b21b6] underline" @click="showDisc = !showDisc">{{ showDisc ? 'Hide' : 'Adjust' }} discounts / scholarship</button>
+        <button class="text-lg font-bold text-[#5b21b6] underline" @click="showDisc = !showDisc">{{ showDisc ? 'Hide' : 'Edit' }} fees for this student</button>
         <div v-if="showDisc && assessment" class="mt-3 overflow-x-auto">
-          <table class="w-full min-w-[520px] text-left text-sm">
-            <thead class="bg-[#f5f3ff] text-[#4c1d95]"><tr><th class="p-2">Fee</th><th class="p-2 text-right">Amount</th><th class="p-2 text-right">Discount</th><th class="p-2 text-right">Paid</th></tr></thead>
+          <p class="mb-2 text-sm text-slate-500">Baguhin ang halaga o i-unlock ang isang fee para sa estudyanteng ito LANG. Hindi maaapektuhan ang ibang estudyante.</p>
+          <table class="w-full min-w-[560px] text-left text-sm">
+            <thead class="bg-[#f5f3ff] text-[#4c1d95]"><tr><th class="p-2">Fee</th><th class="p-2 text-right">Amount</th><th class="p-2 text-center">Unlock</th><th class="p-2 text-right">Paid</th></tr></thead>
             <tbody>
               <tr v-for="l in assessment.lines" :key="l._id" class="border-t border-[#f1eefb]">
                 <td class="p-2">{{ l.label }}</td>
-                <td class="p-2 text-right tabular-nums">{{ peso(l.amountDue) }}</td>
-                <td class="p-2 text-right"><input v-model.number="disc[l._id]" type="number" class="w-24 rounded border border-slate-300 p-1 text-right tabular-nums" /></td>
+                <td class="p-2 text-right"><input v-model.number="lineEdits[l._id].amountDue" type="number" min="0" class="w-28 rounded border border-slate-300 p-1 text-right tabular-nums" /></td>
+                <td class="p-2 text-center"><input type="checkbox" v-model="lineEdits[l._id].unlocked" class="h-5 w-5" /></td>
                 <td class="p-2 text-right tabular-nums text-[#15803d]">{{ peso(l.amountPaid) }}</td>
               </tr>
             </tbody>
           </table>
-          <button class="mt-3 rounded-xl bg-[#6d28d9] px-5 py-2.5 font-bold text-white hover:bg-[#5b21b6] disabled:opacity-60" :disabled="savingDisc" @click="saveDiscounts">{{ savingDisc ? 'Saving…' : 'Save discounts' }}</button>
+          <button class="mt-3 rounded-xl bg-[#6d28d9] px-5 py-2.5 font-bold text-white hover:bg-[#5b21b6] disabled:opacity-60" :disabled="savingDisc" @click="saveLedgerLines">{{ savingDisc ? 'Saving…' : 'Save changes' }}</button>
         </div>
       </section>
     </div>

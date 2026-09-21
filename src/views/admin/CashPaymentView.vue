@@ -8,8 +8,9 @@ const toast = useToast();
 const students = ref([]);
 const items = ref([]);
 const payments = ref([]);
+const itemEdits = ref({});         // key -> { amount, unlocked }
+const savingEdit = ref(false);
 const selected = ref({});          // key -> bool
-const adjInputs = ref({});         // key -> payment adjustment (+ add / - deduct)
 const amount = ref(null);
 const form = ref({ student: '', referenceNo: '', paymentDate: new Date().toISOString().slice(0, 10) });
 const loadingLedger = ref(false); const saving = ref(false);
@@ -30,7 +31,7 @@ onMounted(async () => {
 });
 
 async function loadLedger(id) {
-  items.value = []; payments.value = []; selected.value = {}; amount.value = null; adjInputs.value = {};
+  items.value = []; payments.value = []; selected.value = {}; amount.value = null; itemEdits.value = {};
   if (!id) return;
   loadingLedger.value = true;
   try {
@@ -39,12 +40,30 @@ async function loadLedger(id) {
       http.get(`/students/${id}/ledger`),
     ]);
     items.value = it.data.items;
-    items.value.forEach((x) => { adjInputs.value[x.key] = x.adjustment || 0; });
     payments.value = led.data.payments || [];
+    itemEdits.value = {};
+    items.value.forEach((x) => { itemEdits.value[x.key] = { amount: x.amountDue, unlocked: !!x.unlocked }; });
   } catch { /* ignore */ }
   finally { loadingLedger.value = false; }
 }
 
+async function saveLedger() {
+  savingEdit.value = true;
+  try {
+    await http.patch(`/students/${form.value.student}/item-edits`, { edits: itemEdits.value });
+    toast.success('Ledger updated for this student.');
+    await loadLedger(form.value.student);
+  } catch (e) { toast.error(e?.response?.data?.message || 'Could not save changes.'); }
+  finally { savingEdit.value = false; }
+}
+
+async function unlockItem(it) {
+  try {
+    await http.patch(`/students/${form.value.student}/item-edits`, { edits: { [it.key]: { unlocked: true } } });
+    toast.success(`${it.label} unlocked.`);
+    await loadLedger(form.value.student);
+  } catch (e) { toast.error(e?.response?.data?.message || 'Could not unlock.'); }
+}
 const badge = (s) => (s === 'VERIFIED' ? 'bg-[#dcfce7] text-[#15803d]' : s === 'REJECTED' ? 'bg-[#fee2e2] text-[#b91c1c]' : s === 'REVERSED' ? 'bg-slate-200 text-slate-600' : 'bg-[#fef3c7] text-[#b45309]');
 async function reversePayment(p) {
   if (p.status !== 'VERIFIED') return;
@@ -52,13 +71,6 @@ async function reversePayment(p) {
   if (reason === null) return;
   try { await http.post(`/payments/${p._id}/reverse`, { reason }); done.value = 'Payment reversed. Balance restored.'; await loadLedger(form.value.student); }
   catch { error.value = 'Could not reverse.'; }
-}
-async function applyAdjustment(it) {
-  try {
-    await http.patch(`/students/${form.value.student}/item-discount`, { key: it.key, adjustment: Number(adjInputs.value[it.key]) || 0 });
-    toast.success(`Adjustment applied to ${it.label}.`);
-    await loadLedger(form.value.student);
-  } catch (e) { toast.error(e?.response?.data?.message || 'Could not apply adjustment.'); }
 }
 watch(() => form.value.student, (id) => loadLedger(id));
 
@@ -105,23 +117,33 @@ async function submit() {
           <h2 class="text-lg font-bold text-[#5b21b6]">Student Ledger</h2>
           <span class="font-bold tabular-nums" :class="totalBalance > 0 ? 'text-[#b91c1c]' : 'text-[#15803d]'">Total balance: {{ peso(totalBalance) }}</span>
         </div>
+        <p class="text-sm text-slate-500">Puwedeng baguhin ang <b>Amount</b> o i-tick ang <b>Unlock</b> dito mismo, tapos pindutin ang <b>Save ledger changes</b>. Para sa estudyanteng ito LANG — hindi maaapektuhan ang iba.</p>
 
         <div class="overflow-x-auto rounded-2xl border border-[#e5e0f7] bg-white">
-          <table class="w-full min-w-[720px] text-left text-sm">
+          <table class="w-full min-w-[880px] text-left text-sm">
             <thead class="bg-[#f5f3ff] text-[#4c1d95]">
-              <tr><th class="p-2">Pay</th><th class="p-2">Fees</th><th class="p-2">Due date</th><th class="p-2">Status</th><th class="p-2 text-right">Adjustment<br /><span class="text-[10px] font-normal text-slate-400">(+ add / − less)</span></th><th class="p-2 text-right">Paid</th><th class="p-2">Payment dates</th><th class="p-2 text-right">Balance</th><th class="p-2">Remarks</th></tr>
+              <tr>
+                <th class="p-2">Pay</th><th class="p-2">Fees</th>
+                <th class="p-2 text-right">Amount</th>
+                <th class="p-2">Due date</th><th class="p-2">Status</th>
+                <th class="p-2 text-center">Unlock</th>
+                <th class="p-2 text-right">Paid</th><th class="p-2">Payment dates</th><th class="p-2 text-right">Balance</th><th class="p-2">Remarks</th>
+              </tr>
             </thead>
             <tbody>
               <tr v-for="it in items" :key="it.key" class="border-t border-[#f1eefb]" :class="selected[it.key] ? 'bg-[#f5f3ff]' : ''">
                 <td class="p-2 text-center">
                   <input v-if="it.payable" type="checkbox" :checked="selected[it.key]" @change="toggle(it.key)" />
-                  <span v-else title="locked">🔒</span>
+                  <button v-else title="I-click para i-unlock" class="text-lg" @click="unlockItem(it)">🔒</button>
                 </td>
                 <td class="p-2 font-semibold">{{ it.label }}<span v-if="!it.payable && it.reason" class="block text-xs font-normal text-[#b91c1c]">{{ it.reason }}</span></td>
+                <td class="p-2 text-right">
+                  <input v-if="itemEdits[it.key]" v-model.number="itemEdits[it.key].amount" type="number" min="0" class="w-24 rounded border border-slate-300 p-1 text-right tabular-nums" />
+                </td>
                 <td class="p-2 text-slate-600">{{ fmtDate(it.dueDate) }}</td>
                 <td class="p-2"><span class="rounded px-2 py-0.5 text-xs font-semibold" :class="statusClass(it.status)">{{ statusText(it.status) }}</span></td>
-                <td class="p-2 text-right">
-                  <input v-model.number="adjInputs[it.key]" type="number" class="w-24 rounded border border-slate-300 p-1 text-right tabular-nums" @blur="applyAdjustment(it)" @keyup.enter="applyAdjustment(it)" />
+                <td class="p-2 text-center">
+                  <input v-if="itemEdits[it.key]" type="checkbox" v-model="itemEdits[it.key].unlocked" class="h-5 w-5" />
                 </td>
                 <td class="p-2 text-right tabular-nums text-[#15803d]">{{ peso(it.amountPaid) }}</td>
                 <td class="p-2 text-slate-600">{{ fmtDates(it.paymentDates) }}</td>
@@ -131,6 +153,7 @@ async function submit() {
             </tbody>
           </table>
         </div>
+        <button class="rounded-xl border-2 border-[#6d28d9] px-5 py-2 font-bold text-[#6d28d9] hover:bg-[#f5f3ff] disabled:opacity-60" :disabled="savingEdit" @click="saveLedger">{{ savingEdit ? 'Saving…' : 'Save ledger changes' }}</button>
 
         <!-- Payment inputs -->
         <div class="grid gap-3 rounded-2xl border border-[#e5e0f7] bg-white p-4 sm:grid-cols-3">
